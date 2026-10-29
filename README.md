@@ -8,7 +8,9 @@ A modular, namespaced calculator widget for WordPress. Everything renders inside
 **Phase 3:** Step 1 JavaScript — state, sync, pain exclusivity, height maths.
 **Phase 4:** Step 2 engine — Ergo Budget Ratio™, CPCH, Posture Risk.
 **Phase 5:** Step 2 UI — allocation bars + metric chips.
-**Phase 6 (current):** Step 3 — AEO answer box, gear shortlist, affiliate disclosure.
+**Phase 6:** Step 3 — AEO answer box, gear shortlist, affiliate disclosure.
+**Phase 7 (current):** SEO — JSON-LD schema, static crawlable fallback,
+methodology / E-E-A-T section, and WordPress embed guide.
 
 ## Structure
 
@@ -21,7 +23,8 @@ A modular, namespaced calculator widget for WordPress. Everything renders inside
 │   ├── step1.test.js           # jsdom behavioural suite (98 assertions)
 │   ├── step2.test.js           # engine suite + fuzz (100 assertions)
 │   ├── step2-ui.test.js        # rendered-UI suite (67 assertions)
-│   └── step3.test.js           # AEO + products + reveal (89 assertions)
+│   ├── step3.test.js           # AEO + products + reveal (90 assertions)
+│   └── seo.test.js             # JSON-LD, fallbacks, E-E-A-T (86 assertions)
 ├── assets/css/
 │   ├── rt-tokens.css           # Layer 0 — design tokens, scoped to .rt-calc
 │   ├── rt-calc.css             # Layer 1 — scoped reset, shell, step skeleton
@@ -402,7 +405,8 @@ npm i --no-save jsdom csstree-validator
 node tests/step1.test.js     #  98 assertions
 node tests/step2.test.js     # 100 assertions
 node tests/step2-ui.test.js  #  67 assertions
-node tests/step3.test.js     #  89 assertions
+node tests/step3.test.js     #  90 assertions
+node tests/seo.test.js       #  86 assertions
 ```
 
 `step1`: state defaults, slider↔input sync, mid-typing guard, snapping, all three
@@ -417,6 +421,90 @@ every chair-tier boundary, risk bands, `computeStep2` aggregation, and reactive
 reconciliation, reactive updates from budget/pain/hours changes, currency reformatting
 (£ and C$), tier boundaries, extremes, a 120-case fuzz asserting percentages total 100
 and amounts total the budget, and graceful degradation when the panel is absent.
+
+## SEO & crawler readiness
+
+### Structured data
+
+Two JSON-LD blocks in `<head>`:
+
+- **`SoftwareApplication`** — name (`Smart Ergonomic Budget Calculator`), description,
+  `operatingSystem`, `applicationCategory: HealthApplication`, `isAccessibleForFree`,
+  `featureList`, and `offers` as an `Offer` with `price: "0"` / `priceCurrency: USD`.
+  Google's SoftwareApplication rich result requires `name`, `operatingSystem` and one of
+  `offers` / `aggregateRating` / `review` — all satisfied.
+- **`FAQPage`** — three questions (budget sizing, the Ergo Budget Ratio, chair vs desk),
+  each with an `acceptedAnswer` of `@type: Answer`. Answers quote figures that match the
+  implementation exactly: 35/25/20/10/5/5 baseline, the 1% floor, and the real slider
+  ranges (200–5,000 USD, 150–4,000 GBP, 250–6,500 CAD). `seo.test.js` asserts that match,
+  so the copy cannot drift away from the code.
+
+`seo.test.js` parses both blocks and checks every required property — plus that no
+`SoftwareApplication` duplicate is introduced elsewhere.
+
+> Note: since 2023 Google limits FAQ *rich results* to authoritative health/government
+> sites. The markup remains valid schema.org and is what answer engines read.
+
+### Static fallback (the page works without JavaScript)
+
+`#rt-aeo-answer-text` ships with real, readable advice — the 35/25/20 baseline plus how
+pain points shift it — rather than being filled only by JS. It is deliberately **neutral**:
+it quotes no invented personal budget, so a crawler never indexes a fake `$1,000` result
+as though it were the visitor's.
+
+The fallback is preserved until a visitor actually generates a plan.
+`renderStep3UI(result, refs, { personaliseAnswer })` only replaces the paragraph when
+`calculatePlan()` runs, so boot and ordinary Step 1 input changes never overwrite
+crawlable copy with a "complete your profile" restatement.
+
+### Methodology / E-E-A-T section
+
+`<section class="rt-methodology" id="rt-methodology">` sits **outside** `.rt-calc` (it is
+editorial content, not part of the widget) and documents:
+
+- **How We Calculate Your Budget** — the allocation table, every modifier, the 1% floor
+  and water-filling renormalisation.
+- **CPCH** — `budget ÷ (hours × 365 × 5)`, with the five-year service-life assumption
+  stated.
+- **Posture risk** — chair tiers, hour penalties, pain points and the 0–2 / 3–5 / 6+ bands.
+- **Anthropometric reference** — stature × 0.41 seated, × 0.63 standing.
+- **Standards referenced** — OSHA Computer Workstations eTool, ISO 9241-5, ANSI/HFES 100,
+  with an explicit note that the tool is *not* certified to or endorsed by them.
+- **Medical disclaimer** and **affiliate disclosure** (naming Amazon Associates and
+  stating that affiliate status does not influence the model or the product tier).
+
+It reuses the Phase 1 tokens: the token block in `rt-tokens.css` now targets
+`.rt-calc, .rt-methodology`, so both plugin surfaces share one palette without ever
+touching `:root`.
+
+### Head metadata
+
+Descriptive `<title>`, a 100+ character `meta description`, `robots` with
+`max-image-preview:large`, and a `rel=canonical`. The canonical currently points at
+`https://example.com/...` — **replace it with the real URL before launch** (the test
+asserts it is a marked placeholder so this cannot be forgotten silently).
+
+## WordPress embedding
+
+The full guide is in the comment block at the top of `index.html`. Summary:
+
+| Method | Use when | Notes |
+| --- | --- | --- |
+| **1. Plugin** (recommended) | production | `wp_enqueue_style` for `rt-tokens` → `rt-calc`, `wp_enqueue_script` in the footer, plus a `[ergonomic_calculator]` shortcode |
+| **2. Theme** | child theme | same enqueues via `get_stylesheet_directory_uri()` |
+| **3. Custom HTML block** | quick test | inline `<style>`/`<script>`; heavier revisions, no caching for assets, some security plugins strip inline JS |
+
+Rules that keep it portable:
+
+- Load `rt-tokens.css` **before** `rt-calc.css` (the component layer depends on the variables).
+- `rt-calc.js` self-initialises on `DOMContentLoaded` and `init()` is idempotent, so it also
+  works when the markup is injected later via AJAX.
+- **Never enqueue `demo-page.css`** — it is the preview harness only.
+- Emit **one** `SoftwareApplication` node per URL; drop ours if an SEO plugin already
+  outputs one.
+
+For the strongest indexing, render the personalised answer server-side in PHP using the
+same inputs and the same ratios as `RT_Calculator.calculateAllocation()`.
 
 ## Design tokens
 
@@ -461,5 +549,6 @@ python3 -m http.server 8000
 - Phase 4 — Step 2 engine: allocation, CPCH, posture risk. ✅
 - Phase 5 — Step 2 progress-bar UI. ✅
 - Phase 6 — Step 3 results, AEO box, gear shortlist. ✅
-- Phase 7 — WordPress shortcode / block wrapper, `wp_enqueue_script` with `defer`,
-  plus server-side rendering of the answer text for crawlers that do not run JS.
+- Phase 7 — SEO: JSON-LD, static fallbacks, methodology, WordPress guide. ✅
+- Phase 8 (optional) — PHP shortcode/block package with server-side rendering of the
+  personalised answer, so crawlers see the calculated result and not just the fallback.

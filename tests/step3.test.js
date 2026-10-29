@@ -106,6 +106,8 @@ const fillValid = (doc, fire, w) => {
   const text = aeo.textContent.replace(/\s+/g, ' ').trim();
   ok($('#rt-aeo-answer-box') !== null, 'answer box exists');
   ok(text.length > 100, 'answer is a substantive paragraph', text.length);
+  ok(!text.startsWith('Complete your profile above'),
+     'personalised answer replaced the static SEO fallback', text.slice(0, 60));
   ok(text.startsWith('For a software developer working 8+ hours daily'),
      'opens with role + hours', text.slice(0, 60));
   ok(text.includes('$1,000'), 'includes the budget in the active currency', text);
@@ -325,7 +327,7 @@ const fillValid = (doc, fire, w) => {
      'no credentials in the bundle');
   ok((code.match(/amzn\.to/g) || []).length >= 3, 'links are clearly mock amzn.to placeholders',
      (code.match(/amzn\.to/g) || []).length);
-  ok(RT.version === '0.6.0', 'version bumped to 0.6.0', RT.version);
+  ok(RT.version === '0.7.0', 'version bumped to 0.7.0', RT.version);
 
   /* ================= 11. Degrades without Step 3 markup ================= */
   console.log('\n11. Robustness');

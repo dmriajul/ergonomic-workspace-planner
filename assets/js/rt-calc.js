@@ -1731,11 +1731,19 @@
   /**
    * Paint the Step 3 panel for a computed result.
    * Pure DOM writing; safe to call repeatedly.
+   *
+   * @param {Object} result
+   * @param {Object} refs
+   * @param {{personaliseAnswer?:boolean}} [options] When false (the default) the
+   *   crawlable static paragraph in the HTML is left untouched: there is no
+   *   personalised plan yet, so replacing real advice with a "complete your
+   *   profile" restatement would be worse for SEO and for the reader.
    */
-  function renderStep3UI(result, refs) {
+  function renderStep3UI(result, refs, options) {
     if (!refs) return;
+    var opts = options || {};
 
-    if (refs.aeoText) {
+    if (refs.aeoText && opts.personaliseAnswer !== false) {
       refs.aeoText.textContent = buildAEOText(
         { budget: result.budget, currency: result.currency, hours: result.hours,
           work: result.work, pains: result.pains },
@@ -1761,7 +1769,7 @@
     if (!readiness.ready || !step3Refs) return null;
 
     var result = computeStep2();
-    renderStep3UI(result, step3Refs);
+    renderStep3UI(result, step3Refs, { personaliseAnswer: true });
 
     step3Refs.section.hidden = false;
     step3Refs.slot.removeAttribute("data-empty");
@@ -1850,7 +1858,7 @@
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.6.0";
+  RT_Calculator.version = "0.7.0";
   RT_Calculator.getState = getState;
 
   // Step 1
