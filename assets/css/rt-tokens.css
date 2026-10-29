@@ -7,7 +7,12 @@
    No component styles live in this file.
    ========================================================================== */
 
-.rt-calc {
+/* `--rt-*` tokens are consumed by .rt-calc (the widget) and .rt-methodology
+   (static editorial content that sits beside it). Both are plugin-owned
+   surfaces, so the tokens are scoped to exactly those two selectors — never
+   :root — and a host theme still cannot override them by accident. */
+.rt-calc,
+.rt-methodology {
   color-scheme: dark;
 
   /* ---- Surfaces ---------------------------------------------------------- */

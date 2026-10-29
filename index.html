@@ -1,10 +1,93 @@
 <!DOCTYPE html>
+<!--
+  ============================================================================
+  SMART ERGONOMIC BUDGET CALCULATOR — WORDPRESS EMBED GUIDE
+  ============================================================================
+  Three files do all the work. Nothing is inlined, so a theme or CSP cannot
+  strip it:
+
+    assets/css/rt-tokens.css   design tokens (scoped to .rt-calc)
+    assets/css/rt-calc.css     all component styles (scoped)
+    assets/js/rt-calc.js       all behaviour (one IIFE, no dependencies)
+
+  assets/css/demo-page.css is a PREVIEW HARNESS ONLY — never enqueue it.
+
+  ---------------------------------------------------------------------------
+  METHOD 1 — Plugin (recommended)
+  ---------------------------------------------------------------------------
+  Copy the three files into your plugin folder, then in functions.php:
+
+    add_action( 'wp_enqueue_scripts', function () {
+        $dir = plugin_dir_url( __FILE__ );
+        $ver = '0.7.0';
+        wp_enqueue_style(  'rt-tokens', $dir . 'assets/css/rt-tokens.css', [], $ver );
+        wp_enqueue_style(  'rt-calc',   $dir . 'assets/css/rt-calc.css',   [ 'rt-tokens' ], $ver );
+        wp_enqueue_script( 'rt-calc',   $dir . 'assets/js/rt-calc.js',     [], $ver, true );
+    } );
+
+  Then register a shortcode that returns the markup from this file — everything
+  between <div class="rt-calc"> and its closing </div>, plus the methodology
+  <section class="rt-methodology"> if you want the E-E-A-T copy on the page:
+
+    add_shortcode( 'ergonomic_calculator', function () {
+        ob_start();
+        include __DIR__ . '/partials/calculator.php';
+        return ob_get_clean();
+    } );
+    // Usage: [ergonomic_calculator]
+
+  ---------------------------------------------------------------------------
+  METHOD 2 — Theme files
+  ---------------------------------------------------------------------------
+  Put the three files in your child theme and enqueue them the same way, using
+  get_stylesheet_directory_uri() . '/assets/...'. Load rt-tokens.css before
+  rt-calc.css (rt-calc depends on those variables). The script is safe in the
+  footer; it self-initialises on DOMContentLoaded and is idempotent, so it also
+  survives being loaded after the markup is injected via AJAX.
+
+  ---------------------------------------------------------------------------
+  METHOD 3 — Custom HTML block (quickest, no PHP)
+  ---------------------------------------------------------------------------
+  1. Paste the markup (the .rt-calc block + .rt-methodology section) into a
+     Custom HTML block.
+  2. In the same block, inline the two stylesheets inside <style> tags and the
+     script inside a <script> tag — but rename the .rt-demo / body styles away,
+     because they belong to the preview only.
+  3. Caveats: revisions get heavy, no browser caching for the CSS/JS, and some
+     security plugins strip inline <script>. Method 1 is better for production.
+
+  ---------------------------------------------------------------------------
+  STRUCTURED DATA
+  ---------------------------------------------------------------------------
+  This file contains two JSON-LD blocks in <head>: SoftwareApplication and
+  FAQPage. When embedding in WordPress, choose ONE of:
+    a) keep them and add them via wp_head (e.g. a small mu-plugin), or
+    b) delete them if your SEO plugin already outputs equivalent schema.
+  Duplicate SoftwareApplication nodes on one URL can invalidate rich results.
+  Replace the placeholder canonical/URL with your real page URL before launch.
+
+  ---------------------------------------------------------------------------
+  NO-JAVASCRIPT BEHAVIOUR
+  ---------------------------------------------------------------------------
+  #rt-aeo-answer-text ships with static, crawlable advice and the methodology
+  section is plain HTML, so the page is useful without JS. Step 3 stays hidden
+  until the visitor clicks "Calculate my plan". For the strongest SEO, render
+  the personalised answer server-side in PHP using the same inputs the JS uses
+  (budget, currency, hours, work, pains) and the same ratios in
+  RT_Calculator.calculateAllocation().
+  ============================================================================
+-->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Smart Ergonomic Calculator — Skeleton</title>
-  <meta name="description" content="Step 1 scaffold: dark-mode shell and namespaced containers for the Smart Ergonomic Calculator." />
+  <title>Smart Ergonomic Budget Calculator — Plan Your Desk Setup</title>
+  <meta
+    name="description"
+    content="Work out what to spend on an ergonomic desk setup. Split your budget across chair, desk and monitor using the Ergo Budget Ratio, then see cost-per-comfort-hour and posture risk."
+  />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <link rel="canonical" href="https://example.com/smart-ergonomic-calculator/" />
 
   <!-- Optional display + body faces. Falls back to the system stack offline. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -14,6 +97,72 @@
   <!-- Plugin layers: tokens first, then scoped base. -->
   <link rel="stylesheet" href="assets/css/rt-tokens.css" />
   <link rel="stylesheet" href="assets/css/rt-calc.css" />
+
+
+  <!-- ===== Structured data: SoftwareApplication =====
+       Validate with https://validator.schema.org/ and Google's Rich Results Test.
+       If the page is served from WordPress, keep only ONE SoftwareApplication node
+       per page (an SEO plugin may already emit one). -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Smart Ergonomic Budget Calculator",
+  "description": "A free calculator that splits an ergonomic workstation budget across chair, desk, monitor, keyboard, lighting and cables using the Ergo Budget Ratio, then estimates cost per comfort hour and a posture risk band from desk hours and reported pain points.",
+  "applicationCategory": "HealthApplication",
+  "applicationSubCategory": "Ergonomics and workplace planning",
+  "operatingSystem": "Web browser (any modern desktop or mobile browser)",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "featureList": [
+    "Ergo Budget Ratio budget split across six workstation categories",
+    "Cost-Per-Comfort-Hour estimate",
+    "Posture risk banding by desk hours and pain points",
+    "Regional budget ranges for USD, GBP and CAD"
+  ]
+}
+  </script>
+
+  <!-- ===== Structured data: FAQPage =====
+       Valid schema.org FAQPage. Note: Google has restricted FAQ *rich results* to
+       authoritative health and government sites since 2023 — the markup is still
+       valid and is what answer engines and AI crawlers read. -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How much should I budget for an ergonomic setup?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Most people can build a comfortable, adjustable workstation for about 700 to 1,600 in US dollars, which is the range this calculator calls a balanced build. Below 700 you are choosing essentials: a chair with adjustable seat height and lumbar support, and a monitor stand or riser. Between 1,600 and 3,000 buys a properly adjustable chair, a height-adjustable desk and a larger high-resolution display. Above 3,000 you are paying for build quality, warranty length and materials rather than for additional ergonomic benefit. The calculator accepts budgets from 200 to 5,000 USD, 150 to 4,000 GBP and 250 to 6,500 CAD."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the Ergo Budget Ratio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The Ergo Budget Ratio is the allocation model this calculator uses to divide a single budget across six workstation categories. The baseline split is 35 percent chair, 25 percent desk, 20 percent monitor, 10 percent keyboard, 5 percent lighting and 5 percent cables. The split then shifts with your inputs: lower back pain moves 5 percent of the budget to the chair, neck and shoulder pain moves 6 percent to the monitor, wrist and hand pain moves 6 percent to the keyboard, working 8 or more hours a day adds weight to the chair and desk, and video editing adds weight to the monitor and lighting. No category is allowed to fall below 1 percent, and the ratios are renormalised so they always total 100 percent."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I prioritize a chair or a desk?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Prioritize the chair. It carries the largest baseline share of the budget at 35 percent against 25 percent for the desk, because seated support affects your spine and hips during every hour at the workstation, while a desk mainly sets your working height. If you already have lower back pain the model shifts a further 5 percent to the chair, taking it to 40 percent. A height-adjustable desk is the better upgrade once your chair gives you stable, adjustable support, or if you want to alternate between sitting and standing during the day."
+      }
+    }
+  ]
+}
+  </script>
 
   <!-- Demo page only. Never shipped in the plugin. -->
   <link rel="stylesheet" href="assets/css/demo-page.css" />
@@ -513,13 +662,21 @@
                  crawlers and AI answer engines can quote it verbatim. -->
             <div class="rt-aeo" id="rt-aeo-answer-box">
               <p class="rt-aeo__eyebrow">The short answer</p>
+              <!--
+                STATIC FALLBACK (SEO): this paragraph is real content in the HTML,
+                so crawlers and AI answer engines that never execute JavaScript
+                still read valid, keyword-bearing advice. It is neutral on purpose —
+                no invented personal budget. JavaScript replaces it with the
+                personalised answer once the visitor clicks "Calculate my plan".
+              -->
               <p class="rt-aeo__text" id="rt-aeo-answer-text" data-aeo-answer>
-                For a professional working 6–8 hours daily, the recommended
-                ergonomic desk setup budget is $1,000. Using the Ergo Budget
-                Ratio™ calibrated to OSHA standards, allocate $350 (35%) to an
-                ergonomic chair, $250 (25%) to a desk, and $200 (20%) to a
-                monitor, with the remaining $200 (20%) covering keyboard,
-                lighting and cables.
+                Complete your profile above to generate a personalised ergonomic
+                budget. Generally, we recommend allocating 35% of your budget to
+                an ergonomic chair, 25% to a desk, and 20% to a monitor, with the
+                remaining 20% split between a keyboard, lighting and cable
+                management. That baseline rises towards the chair if you have
+                lower back pain, towards the monitor for neck and shoulder pain,
+                and towards the keyboard for wrist and hand pain.
               </p>
             </div>
 
@@ -558,6 +715,166 @@
     </footer>
 
   </div>
+  <!-- =========================================================================
+       METHODOLOGY / E-E-A-T CONTENT
+       -------------------------------------------------------------------------
+       Deliberately OUTSIDE .rt-calc: it is static editorial content, not part of
+       the interactive widget, so it can be rendered once and cached by WordPress.
+       Keep this section on the page in both the JS and no-JS experiences.
+       ========================================================================= -->
+  <section class="rt-methodology" id="rt-methodology" aria-labelledby="rt-methodology-title">
+    <div class="rt-methodology__inner">
+
+      <p class="rt-methodology__eyebrow">Methodology</p>
+      <h2 class="rt-methodology__title" id="rt-methodology-title">
+        How We Calculate Your Budget
+      </h2>
+      <p class="rt-methodology__lede">
+        Every figure the calculator shows is derived from your inputs by three
+        published formulas: a budget allocation model, a cost-per-hour model, and
+        a posture-risk score. Nothing is randomised, and nothing is chosen to
+        steer you towards a particular product.
+      </p>
+
+      <div class="rt-methodology__grid">
+
+        <article class="rt-methodology__card">
+          <h3 class="rt-methodology__h3">1. Ergo Budget Ratio™ (allocation)</h3>
+          <p>
+            Your budget is divided across six workstation categories. The baseline
+            split is <strong>chair 35%, desk 25%, monitor 20%, keyboard 10%,
+            lighting 5%, cables 5%</strong>. Additive modifiers then shift weight
+            based on your profile:
+          </p>
+          <ul class="rt-methodology__list">
+            <li>Lower back pain: chair +5%, desk +2%, keyboard −2%, lighting −2%, cables −3%</li>
+            <li>Neck / shoulder pain: monitor +6%, chair +2%, desk −3%, keyboard −2%, cables −3%</li>
+            <li>Wrist / hand pain: keyboard +6%, desk +1%, chair −2%, lighting −2%, cables −3%</li>
+            <li>8+ desk hours: chair +3%, desk +2%, cables −5%</li>
+            <li>Video editing: monitor +6%, lighting +2%, cables −4%, desk −4%</li>
+          </ul>
+          <p>
+            No category may fall below <strong>1%</strong> of the budget. The set is
+            then renormalised by water-filling so the six ratios always total
+            exactly 100%, which is why a category can gain slightly more than its
+            stated modifier.
+          </p>
+        </article>
+
+        <article class="rt-methodology__card">
+          <h3 class="rt-methodology__h3">2. Cost-Per-Comfort-Hour™ (CPCH)</h3>
+          <p>
+            CPCH expresses what an hour of comfortable work costs once your
+            purchase is spread over its service life:
+          </p>
+          <p class="rt-methodology__formula">
+            <code>CPCH = budget ÷ (desk hours × 365 × 5)</code>
+          </p>
+          <p>
+            Desk hours are banded as 3, 5, 7 or 9 hours per day. The 365 × 5 term
+            assumes five working days a week for a five-year service life, so the
+            result is the amortised hourly cost of the whole setup — useful for
+            comparing a cheap chair you replace every two years against an
+            expensive one you keep for ten.
+          </p>
+        </article>
+
+        <article class="rt-methodology__card">
+          <h3 class="rt-methodology__h3">3. Posture Risk score</h3>
+          <p>
+            The risk band is a simple additive score, not a clinical assessment:
+          </p>
+          <ul class="rt-methodology__list">
+            <li>Chair spend under 150 / 250 / 400 adds 4 / 2 / 1 points (first tier only)</li>
+            <li>Desk hours add 0, 1, 2 or 3 points for under 4, 4–6, 6–8 and 8+ hours</li>
+            <li>Each selected pain area adds 1 point; &ldquo;No pain&rdquo; adds none</li>
+          </ul>
+          <p>
+            Scores of 0–2 read <strong>Low</strong>, 3–5 <strong>Moderate</strong> and
+            6 or more <strong>High</strong>. The score measures how under-resourced
+            your planned setup is relative to your exposure — it says nothing about
+            your health.
+          </p>
+        </article>
+
+        <article class="rt-methodology__card">
+          <h3 class="rt-methodology__h3">4. Anthropometric height reference</h3>
+          <p>
+            From your height we derive two reference working heights using
+            anthropometric ratios common in workstation guidance:
+          </p>
+          <ul class="rt-methodology__list">
+            <li>Seated working height ≈ stature × 0.41</li>
+            <li>Standing working height ≈ stature × 0.63</li>
+          </ul>
+          <p>
+            These are planning references for where your elbows should rest, not
+            measurements of your body. Real ergonomic setup should always be
+            adjusted to your own comfort.
+          </p>
+        </article>
+
+      </div>
+
+      <div class="rt-methodology__standards">
+        <h3 class="rt-methodology__h3">Standards we reference</h3>
+        <p>
+          The ratios above are modelled on the anthropometric and postural
+          guidance published in:
+        </p>
+        <ul class="rt-methodology__list">
+          <li>
+            <strong>OSHA Computer Workstations eTool</strong> — US guidance on
+            workstation components, seated and standing working heights, monitor
+            placement and neutral wrist posture.
+          </li>
+          <li>
+            <strong>ISO 9241-5</strong> — <em>Ergonomics of human–system
+            interaction, Part 5: Workstation layout and postural requirements</em>,
+            the international reference for fitting a workstation to the operator.
+          </li>
+          <li>
+            <strong>ANSI/HFES 100</strong> — US human factors engineering standard
+            for computer workstations, referenced for seated adjustability ranges.
+          </li>
+        </ul>
+        <p class="rt-methodology__note">
+          These standards are cited as background for the ratios used. This
+          calculator is an independent educational tool: it is <strong>not
+          certified to, audited against, or endorsed by</strong> OSHA, ISO or ANSI,
+          and following its output does not guarantee compliance with any standard
+          or regulation.
+        </p>
+      </div>
+
+      <div class="rt-methodology__disclaimers">
+        <div class="rt-methodology__disclaimer">
+          <h3 class="rt-methodology__h3">Medical disclaimer</h3>
+          <p>
+            This tool provides general ergonomic information for planning purposes
+            only. It is <strong>not medical advice</strong>, and it cannot diagnose or
+            treat any condition. Pain, numbness or tingling that persists, worsens,
+            or follows an injury should be assessed by a qualified clinician —
+            ideally one with ergonomics or occupational-health experience — before
+            you spend money on equipment.
+          </p>
+        </div>
+        <div class="rt-methodology__disclaimer">
+          <h3 class="rt-methodology__h3">Affiliate disclosure</h3>
+          <p>
+            Product links in the shortlist are Amazon affiliate links: as an Amazon
+            Associate, Riajul Tech earns from qualifying purchases, at no extra cost
+            to you. Prices and ratings are indicative and can change. Affiliate
+            status does not influence the allocation model, the risk score or which
+            product tier is shown — those are determined entirely by the formulas
+            above and the budget you enter.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
   <!-- Step 1 controller. `defer` keeps parse unblocked and runs after the DOM. -->
   <script src="assets/js/rt-calc.js" defer></script>
 </body>

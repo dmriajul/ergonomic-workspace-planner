@@ -1673,3 +1673,170 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ==========================================================================
+   13. METHODOLOGY / E-E-A-T SECTION (outside .rt-calc)
+   --------------------------------------------------------------------------
+   Static editorial content. It reuses the Phase 1 tokens (the token block also
+   targets .rt-methodology) but nothing here depends on JS.
+   ========================================================================== */
+
+.rt-methodology {
+  display: block;
+  width: 100%;
+  max-width: var(--rt-max-width);
+  margin-inline: auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem) var(--rt-gutter) 0;
+
+  font-family: var(--rt-font-sans);
+  font-size: var(--rt-text-base);
+  line-height: var(--rt-leading-relaxed);
+  color: var(--rt-text-muted);
+}
+
+.rt-methodology :where(h2, h3) {
+  font-family: var(--rt-font-display);
+  font-weight: var(--rt-weight-semibold);
+  line-height: var(--rt-leading-tight);
+  letter-spacing: var(--rt-tracking-tight);
+  color: var(--rt-text);
+}
+
+.rt-methodology :where(p) {
+  margin: 0;
+}
+
+.rt-methodology :where(strong) {
+  color: var(--rt-text);
+  font-weight: var(--rt-weight-semibold);
+}
+
+.rt-methodology__inner {
+  display: grid;
+  gap: var(--rt-space-5);
+  padding-top: var(--rt-space-6);
+  border-top: var(--rt-border-width) solid var(--rt-border);
+}
+
+.rt-methodology__eyebrow {
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wider);
+  text-transform: uppercase;
+  color: var(--rt-signal);
+}
+
+.rt-methodology__title {
+  font-size: var(--rt-text-xl);
+  margin: 0;
+}
+
+.rt-methodology__lede {
+  max-width: 68ch;
+  font-size: var(--rt-text-md);
+}
+
+.rt-methodology__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--rt-space-4);
+}
+
+.rt-methodology__card {
+  display: grid;
+  gap: var(--rt-space-2);
+  padding: var(--rt-space-5);
+
+  background-color: var(--rt-surface);
+  background-image: var(--rt-grad-surface);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-md);
+}
+
+.rt-methodology__h3 {
+  font-size: var(--rt-text-md);
+  margin: 0;
+}
+
+.rt-methodology__list {
+  display: grid;
+  gap: var(--rt-space-1);
+  margin: 0;
+  padding-left: var(--rt-space-4);
+  list-style: disc;
+  font-size: var(--rt-text-sm);
+  line-height: var(--rt-leading-snug);
+}
+
+.rt-methodology__list ::marker {
+  color: var(--rt-text-dim);
+}
+
+.rt-methodology__formula {
+  padding: var(--rt-space-2) var(--rt-space-3);
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-sm);
+  color: var(--rt-signal);
+  background-color: var(--rt-surface-sunken);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-xs);
+  overflow-x: auto;
+}
+
+.rt-methodology__standards {
+  display: grid;
+  gap: var(--rt-space-2);
+  padding: var(--rt-space-5);
+  background-color: var(--rt-surface-sunken);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-md);
+}
+
+.rt-methodology__note {
+  font-size: var(--rt-text-sm);
+  color: var(--rt-text-dim);
+  border-left: 2px solid var(--rt-border-strong);
+  padding-left: var(--rt-space-3);
+}
+
+.rt-methodology__disclaimers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--rt-space-4);
+}
+
+.rt-methodology__disclaimer {
+  display: grid;
+  gap: var(--rt-space-2);
+  padding: var(--rt-space-4);
+  font-size: var(--rt-text-sm);
+  background-color: rgba(248, 113, 113, 0.06);
+  border: var(--rt-border-width) solid rgba(248, 113, 113, 0.24);
+  border-radius: var(--rt-radius-sm);
+}
+
+.rt-methodology__disclaimer .rt-methodology__h3 {
+  font-size: var(--rt-text-sm);
+  letter-spacing: var(--rt-tracking-wide);
+  text-transform: uppercase;
+  color: var(--rt-danger);
+}
+
+.rt-methodology__disclaimer + .rt-methodology__disclaimer {
+  background-color: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.24);
+}
+
+.rt-methodology__disclaimer + .rt-methodology__disclaimer .rt-methodology__h3 {
+  color: var(--rt-warn);
+}
+
+@media (min-width: 44rem) {
+  .rt-methodology__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rt-methodology__disclaimers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
