@@ -9,8 +9,10 @@ A modular, namespaced calculator widget for WordPress. Everything renders inside
 **Phase 4:** Step 2 engine — Ergo Budget Ratio™, CPCH, Posture Risk.
 **Phase 5:** Step 2 UI — allocation bars + metric chips.
 **Phase 6:** Step 3 — AEO answer box, gear shortlist, affiliate disclosure.
-**Phase 7 (current):** SEO — JSON-LD schema, static crawlable fallback,
+**Phase 7:** SEO — JSON-LD schema, static crawlable fallback,
 methodology / E-E-A-T section, and WordPress embed guide.
+**Phase 8 (current):** Production packaging — single-file build, enqueue
+snippet, and the affiliate replacement guide.
 
 ## Structure
 
@@ -19,12 +21,19 @@ methodology / E-E-A-T section, and WordPress embed guide.
 ├── index.html                  # Static preview of the exact markup the plugin renders
 ├── assets/js/
 │   └── rt-calc.js              # Step 1 controller (vanilla, no deps)
+├── wordpress/                  # production artefacts
+│   ├── single-file.html        #   generated: markup + CSS + JS in one paste-ready file
+│   ├── functions-snippet.php   #   recommended: enqueue CSS/JS separately
+│   └── REPLACE-THIS.md         #   all 27 affiliate placeholders + canonical
+├── tools/
+│   └── build-single-file.py    # regenerates wordpress/single-file.html
 ├── tests/
 │   ├── step1.test.js           # jsdom behavioural suite (98 assertions)
 │   ├── step2.test.js           # engine suite + fuzz (100 assertions)
 │   ├── step2-ui.test.js        # rendered-UI suite (67 assertions)
 │   ├── step3.test.js           # AEO + products + reveal (90 assertions)
-│   └── seo.test.js             # JSON-LD, fallbacks, E-E-A-T (86 assertions)
+│   ├── seo.test.js             # JSON-LD, fallbacks, E-E-A-T (86 assertions)
+│   └── build.test.js           # production artefacts + drift check (67 assertions)
 ├── assets/css/
 │   ├── rt-tokens.css           # Layer 0 — design tokens, scoped to .rt-calc
 │   ├── rt-calc.css             # Layer 1 — scoped reset, shell, step skeleton
@@ -407,6 +416,7 @@ node tests/step2.test.js     # 100 assertions
 node tests/step2-ui.test.js  #  67 assertions
 node tests/step3.test.js     #  90 assertions
 node tests/seo.test.js       #  86 assertions
+node tests/build.test.js     #  67 assertions
 ```
 
 `step1`: state defaults, slider↔input sync, mid-typing guard, snapping, all three
@@ -506,6 +516,45 @@ Rules that keep it portable:
 For the strongest indexing, render the personalised answer server-side in PHP using the
 same inputs and the same ratios as `RT_Calculator.calculateAllocation()`.
 
+## Shipping to WordPress
+
+Three artefacts, documented in `wordpress/`:
+
+| File | What it is |
+| --- | --- |
+| `single-file.html` | **Generated.** Markup + `<style>` + `<script>` in one paste-ready file for a Custom HTML block |
+| `functions-snippet.php` | **Recommended for production.** Enqueues the three asset files separately |
+| `REPLACE-THIS.md` | Every placeholder that must be changed before publishing |
+
+### Why the build is generated, not hand-maintained
+
+`tools/build-single-file.py` copies the widget markup and methodology section out of
+`index.html`, inlines `rt-tokens.css` + `rt-calc.css`, and inlines `rt-calc.js`. Because
+the artefact embeds a *copy* of the JS, it would silently rot the moment the sources
+change — so `tests/build.test.js` rebuilds it in place and fails if the output is not
+byte-identical. Editing `rt-calc.js` and forgetting to rebuild breaks the suite.
+
+### Scope guarantees in the single file
+
+| Check | Result |
+| --- | --- |
+| Selectors scoped to `.rt-*` | 240 / 240 |
+| `:root` declarations | none |
+| `body` / `html` selectors | none |
+| External `<link>` / `<script src>` | none |
+| Globals assigned | `window.RT_Calculator` only |
+| `demo-page.css` included | no |
+
+The token block targets `.rt-calc, .rt-methodology` rather than `:root`, which is what
+makes a single-file paste safe inside an arbitrary theme.
+
+### Single file vs. enqueue
+
+`single-file.html` is the easiest path, with two real costs: the CSS/JS is re-downloaded
+with the page (no separate browser cache) and inline `<script>` is blocked by a strict
+Content-Security-Policy or by security plugins that filter post content. For production
+traffic use `functions-snippet.php`. Both are tested to behave identically.
+
 ## Design tokens
 
 All tokens are declared on `.rt-calc` — never `:root` — so a theme can neither
@@ -550,5 +599,6 @@ python3 -m http.server 8000
 - Phase 5 — Step 2 progress-bar UI. ✅
 - Phase 6 — Step 3 results, AEO box, gear shortlist. ✅
 - Phase 7 — SEO: JSON-LD, static fallbacks, methodology, WordPress guide. ✅
+- Phase 8 — Production packaging: single-file build, enqueue snippet, replacement guide. ✅
 - Phase 8 (optional) — PHP shortcode/block package with server-side rendering of the
   personalised answer, so crawlers see the calculated result and not just the fallback.
