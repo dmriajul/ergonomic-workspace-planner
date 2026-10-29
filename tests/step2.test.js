@@ -242,6 +242,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
 
   /* ================= 9. Integration: UI hook ================= */
   console.log('\n9. updateStep2UI() integration');
+  RT.debug = true; // console dump is opt-in since Phase 5
   logs.length = 0;
   const updates = [];
   $('.rt-calc').addEventListener('rt:step2update', e => updates.push(e.detail));
@@ -288,6 +289,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
      'step 2 output follows the currency', [updates[5].currency, updates[5].cpch]);
 
   console.log('\n9c. No hours selected yet');
+  RT.debug = true;
   const fresh = RT.computeStep2({ budget: 1000, currency: 'USD', hours: null, work: null, pains: [] });
   ok(fresh.cpch === null, 'CPCH is null before hours are chosen');
   ok(fresh.risk.label.includes('Low'), 'risk still resolves without hours', fresh.risk);
@@ -306,6 +308,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
     freshDom.window.addEventListener('load', res, { once: true });
   });
   await new Promise(r => setTimeout(r, 0));
+  freshDom.window.RT_Calculator.debug = true; // opt-in dump, as in the live API
   freshDom.window.RT_Calculator.updateStep2UI();
   ok(freshLogs.some(l => l.includes('pick daily hours')),
      'logs a prompt instead of "null" before hours are chosen', freshLogs.slice(2, 6));
@@ -328,7 +331,8 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
     const body = code.slice(start, start + 1400);
     return !/document\.|querySelector|\.style\./.test(body);
   }), 'core functions are DOM-free (pure)');
-  ok(RT.version === '0.4.0', 'version bumped to 0.4.0', RT.version);
+  ok(RT.version === '0.5.0', 'version bumped to 0.5.0', RT.version);
+  ok(RT.debug === true, 'debug flag is opt-in and readable', RT.debug);
 
   console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);

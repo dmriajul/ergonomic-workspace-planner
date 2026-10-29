@@ -31,6 +31,8 @@
   --rt-signal-soft: rgba(45, 212, 191, 0.12);
   --rt-warn: #f59e0b;
   --rt-danger: #f87171;
+  --rt-info: #38bdf8;
+  --rt-violet: #a78bfa;
 
   /* ---- Gradients & glows ------------------------------------------------- */
   --rt-grad-surface: linear-gradient(

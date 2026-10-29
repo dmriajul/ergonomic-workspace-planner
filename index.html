@@ -319,9 +319,152 @@
           </div>
         </header>
 
-        <!-- Module mount point: budget breakdown lands here. -->
-        <div class="rt-calc__slot" id="rt-slot-budget" data-empty="true">
-          <span class="rt-calc__slot-hint">Budget module mounts here</span>
+        <!-- Module mount point: Step 2 budget preview. -->
+        <div class="rt-calc__slot" id="rt-slot-budget">
+          <!--
+            Static values below mirror the default state (USD 1,000, baseline
+            35/25/20/10/5/5 split) so the panel reads correctly before JS runs
+            and stays usable if the script fails to load.
+          -->
+          <div class="rt-preview" id="rt-budget-preview">
+
+            <!-- ===== Allocation bars ===== -->
+            <div class="rt-preview__head">
+              <h3 class="rt-preview__title">Where the money goes</h3>
+              <p class="rt-preview__meta">
+                <span class="rt-preview__total" id="rt-alloc-total">$1,000</span>
+                split across six categories
+              </p>
+            </div>
+
+            <ul class="rt-alloc" id="rt-alloc-list">
+                <li class="rt-alloc__row" data-category="chair">
+                  <span class="rt-alloc__icon" aria-hidden="true">🪑</span>
+                  <span class="rt-alloc__label" id="rt-cat-chair-label">Chair</span>
+                  <span
+                    class="rt-alloc__track"
+                    role="progressbar"
+                    aria-labelledby="rt-cat-chair-label"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="35"
+                    aria-valuetext="Chair 35%"
+                  >
+                    <span class="rt-alloc__bar" style="--rt-alloc: 35%"></span>
+                  </span>
+                  <span class="rt-alloc__pct" id="rt-cat-chair-pct">35%</span>
+                  <span class="rt-alloc__amount" id="rt-cat-chair-amount">$350</span>
+                </li>
+                <li class="rt-alloc__row" data-category="desk">
+                  <span class="rt-alloc__icon" aria-hidden="true">🖥️</span>
+                  <span class="rt-alloc__label" id="rt-cat-desk-label">Desk</span>
+                  <span
+                    class="rt-alloc__track"
+                    role="progressbar"
+                    aria-labelledby="rt-cat-desk-label"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="25"
+                    aria-valuetext="Desk 25%"
+                  >
+                    <span class="rt-alloc__bar" style="--rt-alloc: 25%"></span>
+                  </span>
+                  <span class="rt-alloc__pct" id="rt-cat-desk-pct">25%</span>
+                  <span class="rt-alloc__amount" id="rt-cat-desk-amount">$250</span>
+                </li>
+                <li class="rt-alloc__row" data-category="monitor">
+                  <span class="rt-alloc__icon" aria-hidden="true">📺</span>
+                  <span class="rt-alloc__label" id="rt-cat-monitor-label">Monitor</span>
+                  <span
+                    class="rt-alloc__track"
+                    role="progressbar"
+                    aria-labelledby="rt-cat-monitor-label"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="20"
+                    aria-valuetext="Monitor 20%"
+                  >
+                    <span class="rt-alloc__bar" style="--rt-alloc: 20%"></span>
+                  </span>
+                  <span class="rt-alloc__pct" id="rt-cat-monitor-pct">20%</span>
+                  <span class="rt-alloc__amount" id="rt-cat-monitor-amount">$200</span>
+                </li>
+                <li class="rt-alloc__row" data-category="keyboard">
+                  <span class="rt-alloc__icon" aria-hidden="true">⌨️</span>
+                  <span class="rt-alloc__label" id="rt-cat-keyboard-label">Keyboard</span>
+                  <span
+                    class="rt-alloc__track"
+                    role="progressbar"
+                    aria-labelledby="rt-cat-keyboard-label"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="10"
+                    aria-valuetext="Keyboard 10%"
+                  >
+                    <span class="rt-alloc__bar" style="--rt-alloc: 10%"></span>
+                  </span>
+                  <span class="rt-alloc__pct" id="rt-cat-keyboard-pct">10%</span>
+                  <span class="rt-alloc__amount" id="rt-cat-keyboard-amount">$100</span>
+                </li>
+                <li class="rt-alloc__row" data-category="lighting">
+                  <span class="rt-alloc__icon" aria-hidden="true">💡</span>
+                  <span class="rt-alloc__label" id="rt-cat-lighting-label">Lighting</span>
+                  <span
+                    class="rt-alloc__track"
+                    role="progressbar"
+                    aria-labelledby="rt-cat-lighting-label"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="5"
+                    aria-valuetext="Lighting 5%"
+                  >
+                    <span class="rt-alloc__bar" style="--rt-alloc: 5%"></span>
+                  </span>
+                  <span class="rt-alloc__pct" id="rt-cat-lighting-pct">5%</span>
+                  <span class="rt-alloc__amount" id="rt-cat-lighting-amount">$50</span>
+                </li>
+                <li class="rt-alloc__row" data-category="cables">
+                  <span class="rt-alloc__icon" aria-hidden="true">🔌</span>
+                  <span class="rt-alloc__label" id="rt-cat-cables-label">Cables</span>
+                  <span
+                    class="rt-alloc__track"
+                    role="progressbar"
+                    aria-labelledby="rt-cat-cables-label"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="5"
+                    aria-valuetext="Cables 5%"
+                  >
+                    <span class="rt-alloc__bar" style="--rt-alloc: 5%"></span>
+                  </span>
+                  <span class="rt-alloc__pct" id="rt-cat-cables-pct">5%</span>
+                  <span class="rt-alloc__amount" id="rt-cat-cables-amount">$50</span>
+                </li>
+            </ul>
+
+            <!-- ===== Metric chips ===== -->
+            <ul class="rt-chips">
+              <li class="rt-chip" data-metric="cpch">
+                <span class="rt-chip__icon" aria-hidden="true">⏱️</span>
+                <span class="rt-chip__label">Cost-Per-Comfort-Hour™</span>
+                <span class="rt-chip__value" id="rt-metric-cpch">—</span>
+                <span class="rt-chip__note" id="rt-metric-cpch-note">Choose desk hours</span>
+              </li>
+              <li class="rt-chip" data-metric="risk">
+                <span class="rt-chip__icon" aria-hidden="true">🩺</span>
+                <span class="rt-chip__label">Posture risk</span>
+                <span class="rt-chip__value" id="rt-metric-risk">🟢 Low</span>
+                <span class="rt-chip__note" id="rt-metric-risk-note">Chair spend in range</span>
+              </li>
+              <li class="rt-chip" data-metric="tier">
+                <span class="rt-chip__icon" aria-hidden="true">💳</span>
+                <span class="rt-chip__label">Setup tier</span>
+                <span class="rt-chip__value" id="rt-metric-tier">⚖️ Balanced</span>
+                <span class="rt-chip__note" id="rt-metric-tier-note">Solid mid-range build</span>
+              </li>
+            </ul>
+
+          </div>
         </div>
       </section>
 
