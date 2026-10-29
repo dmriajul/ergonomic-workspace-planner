@@ -1012,3 +1012,34 @@
     padding-block: var(--rt-space-3);
   }
 }
+
+/* ==========================================================================
+   10. JS ENHANCEMENT HOOKS
+   --------------------------------------------------------------------------
+   The controller sets data-currency on .rt-calc. These rules reproduce the
+   glyph swap for engines without :has(), and mute the unselected placeholder
+   so an empty select cannot be mistaken for a chosen value.
+   ========================================================================== */
+
+.rt-calc[data-currency] .rt-cur--gbp,
+.rt-calc[data-currency] .rt-cur--cad {
+  display: none;
+}
+
+.rt-calc[data-currency] .rt-cur--usd {
+  display: inline;
+}
+
+.rt-calc[data-currency="GBP"] .rt-cur--usd,
+.rt-calc[data-currency="CAD"] .rt-cur--usd {
+  display: none;
+}
+
+.rt-calc[data-currency="GBP"] .rt-cur--gbp,
+.rt-calc[data-currency="CAD"] .rt-cur--cad {
+  display: inline;
+}
+
+.rt-select:has(option[value=""]:checked) {
+  color: var(--rt-text-dim);
+}
