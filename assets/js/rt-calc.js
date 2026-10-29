@@ -19,6 +19,16 @@
  *  .calculateErgonomicHeights(in)  → { seatedHeightInches, standingHeightInches,
  *                                      seatedHeightCm, standingHeightCm }
  *  .parseHeightToInches(source)    → inches (number) | null
+ *
+ *  Step 2 engine (pure — safe to call with any state-like object)
+ *  .calculateAllocation(input)     → ratios summing to exactly 1
+ *  .allocateAmounts(budget, alloc) → money per category (sums to budget)
+ *  .calculateCPCH(budget, hours)   → "$0.08" | null
+ *  .calculateCPCHValue(...)        → raw number | null
+ *  .calculatePostureRisk(chair$, hours, pains) → { level, label }
+ *  .computeStep2(snapshot?)        → full Step 2 result object
+ *  .updateStep2UI()                → logs + emits rt:step2update
+ *
  *  .init()                         → idempotent manual (re)initialisation
  *  .version
  *
@@ -28,6 +38,7 @@
  *  rt:painschange    detail: { pains: string[] }
  *  rt:profilechange  detail: { field, value, state }
  *  rt:heightchange   detail: { inches, metrics }
+ *  rt:step2update    detail: { allocation, amounts, cpch, risk, … }
  */
 (function (window, document) {
   "use strict";
@@ -538,8 +549,452 @@
     }
   }
 
+
   /* =========================================================================
-     8. Bootstrap
+     8. MODULE: STEP 2 CALCULATION ENGINE — Ergo Budget Ratio™, CPCH, Posture Risk
+     -------------------------------------------------------------------------
+     Everything in this section is PURE: it takes plain values, returns plain
+     objects, and never touches the DOM. That keeps it unit-testable in
+     isolation and reusable by Step 3 without loading the widget.
+     No AEO copy and no affiliate logic lives here — by design.
+     ========================================================================= */
+
+  /* ---- 8.1 Configuration ------------------------------------------------- */
+
+  /** Baseline split. Must sum to 1.0 (asserted by the test suite). */
+  var ALLOCATION_BASE = {
+    chair: 0.35,
+    desk: 0.25,
+    monitor: 0.2,
+    keyboard: 0.1,
+    lighting: 0.05,
+    cables: 0.05
+  };
+
+  /** Canonical key order — output objects always come back in this order. */
+  var ALLOCATION_KEYS = ["chair", "desk", "monitor", "keyboard", "lighting", "cables"];
+
+  /** No category may fall below 1 % of the budget. */
+  var ALLOCATION_FLOOR = 0.01;
+
+  /** Additive pain-point modifiers (applied cumulatively, in any order). */
+  var PAIN_MODIFIERS = {
+    "lower-back": { chair: 0.05, desk: 0.02, keyboard: -0.02, lighting: -0.02, cables: -0.03 },
+    "neck-shoulder": { monitor: 0.06, chair: 0.02, desk: -0.03, keyboard: -0.02, cables: -0.03 },
+    "wrist-hand": { keyboard: 0.06, desk: 0.01, chair: -0.02, lighting: -0.02, cables: -0.03 }
+  };
+
+  /** Additive modifiers keyed by canonical hours value. */
+  var HOURS_MODIFIERS = {
+    "8+": { chair: 0.03, desk: 0.02, cables: -0.05 }
+  };
+
+  /** Additive modifiers keyed by the Step 1 work value. */
+  var WORK_MODIFIERS = {
+    "video-editing": { monitor: 0.06, lighting: 0.02, cables: -0.04, desk: -0.04 }
+  };
+
+  /**
+   * Hours vocabulary. Step 1 ships `lt4 | 4to6 | 6to8 | 8plus`; the Step 2 spec
+   * speaks `under-4 | 4-6 | 6-8 | 8+`. Both are accepted everywhere, so neither
+   * layer has to rename the other's values.
+   *   hours   → divisor used by CPCH
+   *   penalty → posture-risk contribution
+   */
+  var HOURS_PROFILE = {
+    "under-4": { canonical: "under-4", hours: 3, penalty: 0, aliases: ["lt4"] },
+    "4-6": { canonical: "4-6", hours: 5, penalty: 1, aliases: ["4to6"] },
+    "6-8": { canonical: "6-8", hours: 7, penalty: 2, aliases: ["6to8"] },
+    "8+": { canonical: "8+", hours: 9, penalty: 3, aliases: ["8plus"] }
+  };
+
+  /** Days used by CPCH: 365 days × 5 working days per week. */
+  var CPCH_DAYS = 365;
+  var CPCH_WORKDAYS_PER_WEEK = 5;
+
+  /** Chair-spend penalties for the posture model (first match wins). */
+  var CHAIR_RISK_TIERS = [
+    { below: 150, points: 4 },
+    { below: 250, points: 2 },
+    { below: 400, points: 1 }
+  ];
+
+  /** Total score → risk band. Max possible score is 4 + 3 + 3 = 10. */
+  var RISK_BANDS = [
+    { max: 2, level: "low", label: "\uD83D\uDFE2 Low" },
+    { max: 5, level: "moderate", label: "\uD83D\uDFE1 Moderate" },
+    { max: Infinity, level: "high", label: "\uD83D\uDD34 High" }
+  ];
+
+  /* ---- 8.2 Shared helpers ------------------------------------------------ */
+
+  /**
+   * Resolve any accepted hours value to its profile entry.
+   * @param  {string|null} value e.g. "6to8", "6-8", "8plus", "8+"
+   * @return {{canonical:string, hours:number, penalty:number}|null}
+   */
+  function resolveHours(value) {
+    if (value === null || value === undefined) return null;
+    var needle = String(value).trim().toLowerCase();
+    if (!needle) return null;
+
+    var keys = Object.keys(HOURS_PROFILE);
+    for (var i = 0; i < keys.length; i++) {
+      var entry = HOURS_PROFILE[keys[i]];
+      if (entry.canonical === needle) return entry;
+      if (entry.aliases.indexOf(needle) !== -1) return entry;
+    }
+    return null;
+  }
+
+  /**
+   * Water-filling normaliser: enforce a floor on every weight, then scale so the
+   * set sums to exactly 1. Keys pushed to the floor are locked and the remaining
+   * weight is redistributed among the rest — plain "clamp then divide" would
+   * drop locked keys back below the floor.
+   *
+   * @param  {Object<string,number>} weights raw (may be negative)
+   * @param  {number} [floor=0.01]
+   * @param  {number} [decimals=4]
+   * @return {Object<string,number>} sums to 1 (±1e-9), every value ≥ floor
+   */
+  function normalizeAllocation(weights, floor, decimals) {
+    var min = floor === undefined ? ALLOCATION_FLOOR : floor;
+    var dp = decimals === undefined ? 4 : decimals;
+    var keys = ALLOCATION_KEYS;
+
+    var values = {};
+    var locked = {};
+    var anyFree = false;
+
+    keys.forEach(function (key) {
+      var raw = Number(weights[key]);
+      if (!isFinite(raw)) raw = 0;
+      if (raw <= min) {
+        values[key] = min; // pinned at (or from below) the floor
+        locked[key] = true;
+      } else {
+        values[key] = raw;
+        anyFree = true;
+      }
+    });
+
+    // Degenerate input (everything at/below the floor): split evenly instead of
+    // returning a set that cannot sum to 1.
+    if (!anyFree) {
+      keys.forEach(function (key) {
+        values[key] = round(1 / keys.length, dp);
+      });
+      return rebalanceResidual(values, keys, dp);
+    }
+
+    // Iteratively rescale the free keys until none of them dips under the floor.
+    for (var pass = 0; pass < 24; pass++) {
+      var lockedSum = 0;
+      var freeSum = 0;
+      keys.forEach(function (key) {
+        if (locked[key]) lockedSum += values[key];
+        else freeSum += values[key];
+      });
+
+      var target = 1 - lockedSum; // weight the free keys must occupy
+      if (freeSum <= 0 || target <= 0) break;
+
+      var scale = target / freeSum;
+      var newlyLocked = false;
+
+      keys.forEach(function (key) {
+        if (locked[key]) return;
+        values[key] *= scale;
+        if (values[key] < min) {
+          values[key] = min;
+          locked[key] = true;
+          newlyLocked = true;
+        }
+      });
+
+      if (!newlyLocked) break;
+    }
+
+    keys.forEach(function (key) {
+      values[key] = round(values[key], dp);
+    });
+
+    return rebalanceResidual(values, keys, dp);
+  }
+
+  /**
+   * Rounding leaves a few hundred-thousandths of drift; absorb it into the
+   * largest bucket so the public contract "sums to exactly 1.0" holds.
+   */
+  function rebalanceResidual(values, keys, dp) {
+    var sum = 0;
+    var largestKey = keys[0];
+
+    keys.forEach(function (key) {
+      sum += values[key];
+      if (values[key] > values[largestKey]) largestKey = key;
+    });
+
+    var residual = round(1 - sum, dp);
+    if (residual !== 0) {
+      values[largestKey] = round(values[largestKey] + residual, dp);
+    }
+    return values;
+  }
+
+  /* ---- 8.3 Ergo Budget Ratio™ -------------------------------------------- */
+
+  /**
+   * Turn a Step 1 state into a normalised budget split.
+   *
+   * Order of operations: base → pain modifiers → hours modifier → work
+   * modifier → floor + normalise. Modifiers are additive, so the order they
+   * are added in does not matter.
+   *
+   * @param  {{pains?:string[], hours?:string|null, work?:string|null}} input
+   * @return {{chair:number, desk:number, monitor:number, keyboard:number,
+   *           lighting:number, cables:number}} ratios summing to 1
+   */
+  function calculateAllocation(input) {
+    var source = input || {};
+    var pains = Array.isArray(source.pains) ? source.pains : [];
+
+    // Start from a fresh copy of the baseline.
+    var weights = {};
+    ALLOCATION_KEYS.forEach(function (key) {
+      weights[key] = ALLOCATION_BASE[key];
+    });
+
+    function apply(modifiers) {
+      if (!modifiers) return;
+      Object.keys(modifiers).forEach(function (key) {
+        if (weights[key] === undefined) return;
+        weights[key] += modifiers[key];
+      });
+    }
+
+    // Pain modifiers — "no-pain" carries none, so it is skipped naturally.
+    pains.forEach(function (pain) {
+      apply(PAIN_MODIFIERS[pain]);
+    });
+
+    // Hours modifier — matched through the canonical value ("8plus" → "8+").
+    var hours = resolveHours(source.hours);
+    if (hours) apply(HOURS_MODIFIERS[hours.canonical]);
+
+    // Work modifier.
+    if (source.work) apply(WORK_MODIFIERS[String(source.work).toLowerCase()]);
+
+    return normalizeAllocation(weights);
+  }
+
+  /**
+   * Convert a ratio split into actual money, rounded to whole currency units
+   * with the rounding drift absorbed by the largest line so the amounts still
+   * sum to the budget exactly.
+   *
+   * @param  {number} budget
+   * @param  {Object<string,number>} allocation
+   * @return {Object<string,number>} amounts keyed like the allocation
+   */
+  function allocateAmounts(budget, allocation) {
+    var total = Number(budget);
+    var amounts = {};
+    var runningSum = 0;
+    var largestKey = ALLOCATION_KEYS[0];
+
+    ALLOCATION_KEYS.forEach(function (key) {
+      var amount = Math.round(total * (allocation[key] || 0));
+      amounts[key] = amount;
+      runningSum += amount;
+      if (amount > amounts[largestKey]) largestKey = key;
+    });
+
+    // Absorb integer-rounding drift (a few units at most) on the largest line.
+    if (runningSum !== total && amounts[largestKey] !== undefined) {
+      amounts[largestKey] += Math.round(total - runningSum);
+    }
+    return amounts;
+  }
+
+  /* ---- 8.4 CPCH — Cost-Per-Comfort-Hour™ --------------------------------- */
+
+  /**
+   * Raw (unformatted) cost per comfort hour.
+   *   CPCH = budget / (hours per day × 365 × 5 working days)
+   *
+   * @param  {number} budget
+   * @param  {string|null} hoursValue
+   * @return {number|null} null when the inputs cannot produce a figure
+   */
+  function calculateCPCHValue(budget, hoursValue) {
+    var total = Number(budget);
+    if (!isFinite(total) || total <= 0) return null;
+
+    var hours = resolveHours(hoursValue);
+    if (!hours) return null; // no hours chosen yet → nothing honest to show
+
+    var denominator = hours.hours * CPCH_DAYS * CPCH_WORKDAYS_PER_WEEK;
+    if (denominator <= 0) return null;
+
+    return total / denominator;
+  }
+
+  /**
+   * Currency-formatted CPCH, e.g. "$0.08".
+   * Falls back to a third decimal for very small figures so the result never
+   * reads as a useless "$0.00".
+   *
+   * @param  {number} budget
+   * @param  {string|null} hoursValue
+   * @param  {string} [currency="USD"]
+   * @return {string|null}
+   */
+  function calculateCPCH(budget, hoursValue, currency) {
+    var value = calculateCPCHValue(budget, hoursValue);
+    if (value === null) return null;
+
+    var code = CURRENCIES[currency] ? currency : DEFAULT_CURRENCY;
+    var symbol = CURRENCIES[code].symbol;
+    var decimals = value < 0.01 ? 3 : 2;
+
+    return symbol + value.toFixed(decimals);
+  }
+
+  /* ---- 8.5 Posture Risk -------------------------------------------------- */
+
+  /**
+   * Raw posture-risk score. Exposed separately so Step 3 can explain *why* a
+   * band was reached without re-deriving it.
+   *
+   * @param  {number} chairAmount   money allocated to the chair
+   * @param  {string|null} hoursValue
+   * @param  {string[]} pains
+   * @return {{score:number, chairPoints:number, hoursPoints:number, painPoints:number}}
+   */
+  function calculatePostureRiskScore(chairAmount, hoursValue, pains) {
+    var chair = Number(chairAmount);
+    if (!isFinite(chair)) chair = 0;
+
+    // Chair spend: the first tier the amount falls under wins (tiered, not
+    // cumulative — cumulative scoring would double-penalise a cheap chair).
+    var chairPoints = 0;
+    for (var i = 0; i < CHAIR_RISK_TIERS.length; i++) {
+      if (chair < CHAIR_RISK_TIERS[i].below) {
+        chairPoints = CHAIR_RISK_TIERS[i].points;
+        break;
+      }
+    }
+
+    var hours = resolveHours(hoursValue);
+    var hoursPoints = hours ? hours.penalty : 0;
+
+    // Count distinct pain points, ignoring the preventive "no-pain" option.
+    var seen = {};
+    var painPoints = 0;
+    (Array.isArray(pains) ? pains : []).forEach(function (pain) {
+      if (pain === "no-pain" || seen[pain]) return;
+      seen[pain] = true;
+      painPoints += 1;
+    });
+
+    return {
+      score: chairPoints + hoursPoints + painPoints,
+      chairPoints: chairPoints,
+      hoursPoints: hoursPoints,
+      painPoints: painPoints
+    };
+  }
+
+  /**
+   * Classify posture risk for display.
+   * @return {{level:string, label:string}}
+   */
+  function calculatePostureRisk(chairAmount, hoursValue, pains) {
+    var score = calculatePostureRiskScore(chairAmount, hoursValue, pains).score;
+
+    for (var i = 0; i < RISK_BANDS.length; i++) {
+      if (score <= RISK_BANDS[i].max) {
+        return { level: RISK_BANDS[i].level, label: RISK_BANDS[i].label };
+      }
+    }
+    return { level: "high", label: "\uD83D\uDD34 High" }; // unreachable safeguard
+  }
+
+  /* ---- 8.6 Step 2 aggregation + UI hook ---------------------------------- */
+
+  /**
+   * Run the whole Step 2 pipeline for a state snapshot.
+   * Pure: no DOM, no logging, no events — so tests and Step 3 can call it.
+   *
+   * @param  {Object} [snapshot] state-like object; defaults to live state
+   * @return {{allocation:Object, amounts:Object, chairAmount:number,
+   *           budget:number, currency:string, cpch:string|null,
+   *           cpchValue:number|null, risk:Object, riskScore:Object}}
+   */
+  function computeStep2(snapshot) {
+    var data = snapshot || getState();
+    var budget = Number(data.budget) || 0;
+    var currency = CURRENCIES[data.currency] ? data.currency : DEFAULT_CURRENCY;
+    var pains = Array.isArray(data.pains) ? data.pains : [];
+
+    var allocation = calculateAllocation({
+      pains: pains,
+      hours: data.hours,
+      work: data.work
+    });
+
+    var amounts = allocateAmounts(budget, allocation);
+    var cpchValue = calculateCPCHValue(budget, data.hours);
+
+    return {
+      budget: budget,
+      currency: currency,
+      allocation: allocation,
+      amounts: amounts,
+      chairAmount: amounts.chair,
+      cpch: calculateCPCH(budget, data.hours, currency),
+      cpchValue: cpchValue,
+      risk: calculatePostureRisk(amounts.chair, data.hours, pains),
+      riskScore: calculatePostureRiskScore(amounts.chair, data.hours, pains)
+    };
+  }
+
+  /**
+   * Step 2 UI hook. Reads live state, runs the engine, publishes the result.
+   * The progress bars land next phase — for now this only logs, and emits
+   * `rt:step2update` so the upcoming UI (or Step 3) can subscribe.
+   *
+   * @return {Object|null} the computed snapshot (handy in tests / console)
+   */
+  function updateStep2UI() {
+    var result = computeStep2();
+
+    // A null CPCH means no hours chosen yet — say so rather than logging null.
+    var cpchText = result.cpch === null ? "(pick daily hours)" : result.cpch;
+
+    if (window.console && typeof window.console.groupCollapsed === "function") {
+      window.console.groupCollapsed(
+        "[RT] Step 2 \u2014 " + result.currency + " " + formatAmount(result.budget, result.currency)
+      );
+      window.console.log("Allocation:", result.allocation);
+      window.console.log("Amounts:", result.amounts);
+      window.console.log("CPCH:", cpchText);
+      window.console.log("Posture risk:", result.risk.label, result.riskScore);
+      window.console.groupEnd();
+    } else {
+      window.console.log("[RT] Step 2", result);
+    }
+
+    var root = document.querySelector(SELECTOR.root);
+    if (root) emit(root, "rt:step2update", result);
+
+    return result;
+  }
+
+  /* =========================================================================
+     9. Bootstrap
      ========================================================================= */
 
   function init() {
@@ -568,21 +1023,50 @@
     initProfile(ctx);
     initPainPoints(ctx);
 
+    // Step 2 recomputes whenever a Step 1 input changes. Subscribing to the
+    // public events (rather than editing Step 1's handlers) keeps the two
+    // modules decoupled: Step 3 can listen the same way.
+    ["rt:budgetchange", "rt:currencychange", "rt:painschange", "rt:profilechange"]
+      .forEach(function (type) {
+        root.addEventListener(type, function () {
+          updateStep2UI();
+        });
+      });
+
+    updateStep2UI(); // first paint
+
     root.setAttribute("data-rt-ready", "true");
     return true;
   }
 
   /* =========================================================================
-     9. Public namespace
+     10. Public namespace
      ========================================================================= */
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.3.0";
+  RT_Calculator.version = "0.4.0";
   RT_Calculator.getState = getState;
+
+  // Step 1
   RT_Calculator.calculateErgonomicHeights = calculateErgonomicHeights;
   RT_Calculator.parseHeightToInches = parseHeightToInches;
+
+  // Step 2 — pure, DOM-free
+  RT_Calculator.calculateAllocation = calculateAllocation;
+  RT_Calculator.allocateAmounts = allocateAmounts;
+  RT_Calculator.calculateCPCH = calculateCPCH;
+  RT_Calculator.calculateCPCHValue = calculateCPCHValue;
+  RT_Calculator.calculatePostureRisk = calculatePostureRisk;
+  RT_Calculator.calculatePostureRiskScore = calculatePostureRiskScore;
+  RT_Calculator.computeStep2 = computeStep2;
+
+  // Step 2 UI hook
+  RT_Calculator.updateStep2UI = updateStep2UI;
+
   RT_Calculator.currencies = CURRENCIES;
+  RT_Calculator.hoursProfile = HOURS_PROFILE;
+  RT_Calculator.allocationBase = ALLOCATION_BASE;
   RT_Calculator.init = init;
 
   if (document.readyState === "loading") {

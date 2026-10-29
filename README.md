@@ -5,8 +5,9 @@ A modular, namespaced calculator widget for WordPress. Everything renders inside
 
 **Phase 1:** structure only — HTML skeleton + design tokens.
 **Phase 2:** Step 1 UI — budget, ergonomic profile, pain points.
-**Phase 3 (current):** Step 1 JavaScript — state, sync, pain exclusivity, height maths.
-Step 2 / Step 3 logic (allocation, AEO copy) is deliberately absent.
+**Phase 3:** Step 1 JavaScript — state, sync, pain exclusivity, height maths.
+**Phase 4 (current):** Step 2 engine — Ergo Budget Ratio™, CPCH, Posture Risk.
+AEO copy and affiliate logic remain deliberately absent.
 
 ## Structure
 
@@ -16,7 +17,8 @@ Step 2 / Step 3 logic (allocation, AEO copy) is deliberately absent.
 ├── assets/js/
 │   └── rt-calc.js              # Step 1 controller (vanilla, no deps)
 ├── tests/
-│   └── step1.test.js           # jsdom behavioural suite (98 assertions)
+│   ├── step1.test.js           # jsdom behavioural suite (98 assertions)
+│   └── step2.test.js           # engine suite + fuzz (99 assertions)
 ├── assets/css/
 │   ├── rt-tokens.css           # Layer 0 — design tokens, scoped to .rt-calc
 │   ├── rt-calc.css             # Layer 1 — scoped reset, shell, step skeleton
@@ -159,6 +161,89 @@ both units appear** — `5'8"` is exactly 68 in, while the label's `173 cm` is a
 rounded display of 172.72 cm. Results are `console.log`ged on change until Step 3
 renders them.
 
+## Step 2 Engine — `calculateAllocation`, `calculateCPCH`, `calculatePostureRisk`
+
+All pure functions: plain values in, plain objects out, no DOM. They are exposed on
+`window.RT_Calculator` and covered by `tests/step2.test.js`.
+
+### Ergo Budget Ratio™
+
+```js
+RT_Calculator.calculateAllocation({ pains: ["lower-back"], hours: "6to8", work: "design" });
+// { chair: 0.4, desk: 0.27, monitor: 0.2, keyboard: 0.08, lighting: 0.03, cables: 0.02 }
+```
+
+Baseline `chair 35 · desk 25 · monitor 20 · keyboard 10 · lighting 5 · cables 5`.
+Modifiers are **additive**, so their order is irrelevant:
+
+| Trigger | Effect |
+| --- | --- |
+| `lower-back` | chair +5, desk +2, keyboard −2, lighting −2, cables −3 |
+| `neck-shoulder` | monitor +6, chair +2, desk −3, keyboard −2, cables −3 |
+| `wrist-hand` | keyboard +6, desk +1, chair −2, lighting −2, cables −3 |
+| `8+` hours | chair +3, desk +2, cables −5 |
+| `video-editing` | monitor +6, lighting +2, cables −4, desk −4 |
+
+Then: every line is floored at **1 %** and the set is normalised to **1.0**.
+
+The floor uses **water-filling**, not "clamp then divide": a category pinned at 1 %
+is *locked* and the remaining weight is redistributed across the others, repeating
+until stable. Naive normalisation would drop the locked category back below 1 %
+(e.g. `8+` hours drives cables to 0 %). Verified by a 300-case fuzz test asserting
+`sum == 1 ±1e-9` and `value >= 0.01` for every category.
+
+### CPCH — Cost-Per-Comfort-Hour™
+
+```js
+RT_Calculator.calculateCPCH(1000, "6-8");     // "$0.08"
+RT_Calculator.calculateCPCHValue(1000, "6-8"); // 0.0783…
+```
+
+`budget / (hoursPerDay × 365 × 5)`, where hours map `under-4→3, 4-6→5, 6-8→7, 8+→9`.
+Returns the state currency's symbol, 2 decimals — or 3 when the figure rounds to
+`$0.00`, so a small budget never reads as free. Returns `null` (not `0`) when no
+hours are chosen yet.
+
+### Posture Risk
+
+```js
+RT_Calculator.calculatePostureRisk(chairAmount, "8+", ["lower-back"]);
+// { level: "moderate", label: "🟡 Moderate" }
+```
+
+Score = chair tier + hours penalty + 1 per distinct pain (ignoring `no-pain`).
+
+| Chair spend | Points |
+| --- | --- |
+| `< 150` | 4 |
+| `< 250` | 2 |
+| `< 400` | 1 |
+| `≥ 400` | 0 |
+
+Tiers are **first-match, not cumulative** — a cumulative reading would give a
+`$100` chair 4+2+1 = 7 points, double-penalising the same fact three times.
+Hours add `0/1/2/3`; pains add 1 each (max 3). Bands: `0–2 Low`, `3–5 Moderate`,
+`6–10 High`. `calculatePostureRiskScore()` exposes the breakdown (`chairPoints`,
+`hoursPoints`, `painPoints`) so Step 3 can explain a verdict.
+
+### Hours vocabulary
+
+Step 1 emits `lt4 | 4to6 | 6to8 | 8plus`; the Step 2 spec speaks
+`under-4 | 4-6 | 6-8 | 8+`. **Both are accepted everywhere** — the aliases live in a
+single `HOURS_PROFILE` table, so other modules consume the Step 1 value directly and
+never translate. `RT_Calculator.hoursProfile` is exposed for reference.
+
+### Money + aggregation
+
+- `allocateAmounts(budget, allocation)` → whole-currency amounts that sum to the
+  budget exactly (rounding drift absorbed on the largest line).
+- `computeStep2(snapshot?)` → the whole pipeline as one object
+  `{ budget, currency, allocation, amounts, chairAmount, cpch, cpchValue, risk, riskScore }`.
+  Pass a state-like object to score a hypothetical without touching the live widget.
+- `updateStep2UI()` → logs the block and emits `rt:step2update`. Called once at boot
+  and again on every Step 1 change (subscribed to the public events, so Step 1's
+  handlers stay unaware of Step 2).
+
 ### Events (integration points for Steps 2–3)
 
 Dispatched on the `.rt-calc` root, bubbling:
@@ -170,6 +255,7 @@ Dispatched on the `.rt-calc` root, bubbling:
 | `rt:painschange` | `{ pains }` |
 | `rt:profilechange` | `{ field, value, state }` |
 | `rt:heightchange` | `{ inches, metrics }` |
+| `rt:step2update` | `{ allocation, amounts, chairAmount, cpch, cpchValue, risk, riskScore, budget, currency }` |
 
 ```js
 document.addEventListener("rt:heightchange", e => console.log(e.detail.metrics));
@@ -182,12 +268,17 @@ document.addEventListener("rt:heightchange", e => console.log(e.detail.metrics))
 
 ```bash
 npm i --no-save jsdom csstree-validator
-node tests/step1.test.js
+node tests/step1.test.js   # 98 assertions
+node tests/step2.test.js   # 99 assertions
 ```
 
-98 assertions: state defaults, slider↔input sync, mid-typing guard, snapping,
-all three currency windows, pain exclusivity, height maths and parsing, event
-emission, idempotency, and scope discipline (no Step 2/3 logic, no stray globals).
+`step1`: state defaults, slider↔input sync, mid-typing guard, snapping, all three
+currency windows, pain exclusivity, height maths and parsing, events, idempotency.
+
+`step2`: baseline + per-modifier arithmetic, floor/normalisation, 300-case fuzz,
+pain semantics, money rounding, CPCH in all four hour bands and all three currencies,
+every chair-tier boundary, risk bands, `computeStep2` aggregation, and reactive
+`rt:step2update` wiring.
 
 ## Design tokens
 
@@ -229,6 +320,7 @@ python3 -m http.server 8000
 
 - Phase 2 — Step 1 input UI. ✅
 - Phase 3 — Step 1 JS: state, sync, exclusivity, height maths. ✅
-- Phase 4 — Step 2 budget allocation model (consumes `rt:budgetchange`).
-- Phase 5 — results panel and AEO answer block (consumes `rt:heightchange`).
-- Phase 6 — WordPress shortcode / block wrapper, `wp_enqueue_script` with `defer`.
+- Phase 4 — Step 2 engine: allocation, CPCH, posture risk. ✅
+- Phase 5 — Step 2 progress-bar UI (consumes `rt:step2update`).
+- Phase 6 — results panel and AEO answer block (consumes `rt:heightchange`).
+- Phase 7 — WordPress shortcode / block wrapper, `wp_enqueue_script` with `defer`.
