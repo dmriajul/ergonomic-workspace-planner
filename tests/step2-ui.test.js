@@ -157,7 +157,7 @@ const boot = async () => {
   ok($('#rt-alloc-total').textContent === 'C$2,000', 'total uses C$',
      $('#rt-alloc-total').textContent);
   ok($('#rt-metric-cpch').textContent === 'C$0.16/hr', 'CPCH uses C$',
-     $('#rt-metric-cpth') || $('#rt-metric-cpch').textContent);
+     $('#rt-metric-cpch').textContent);
 
   console.log('\n4b. Amounts still reconcile after a currency round-trip');
   const cadAmounts = ['chair', 'desk', 'monitor', 'keyboard', 'lighting', 'cables']

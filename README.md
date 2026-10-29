@@ -7,8 +7,8 @@ A modular, namespaced calculator widget for WordPress. Everything renders inside
 **Phase 2:** Step 1 UI — budget, ergonomic profile, pain points.
 **Phase 3:** Step 1 JavaScript — state, sync, pain exclusivity, height maths.
 **Phase 4:** Step 2 engine — Ergo Budget Ratio™, CPCH, Posture Risk.
-**Phase 5 (current):** Step 2 UI — allocation bars + metric chips.
-AEO copy and affiliate logic remain deliberately absent.
+**Phase 5:** Step 2 UI — allocation bars + metric chips.
+**Phase 6 (current):** Step 3 — AEO answer box, gear shortlist, affiliate disclosure.
 
 ## Structure
 
@@ -20,7 +20,8 @@ AEO copy and affiliate logic remain deliberately absent.
 ├── tests/
 │   ├── step1.test.js           # jsdom behavioural suite (98 assertions)
 │   ├── step2.test.js           # engine suite + fuzz (100 assertions)
-│   └── step2-ui.test.js        # rendered-UI suite (67 assertions)
+│   ├── step2-ui.test.js        # rendered-UI suite (67 assertions)
+│   └── step3.test.js           # AEO + products + reveal (89 assertions)
 ├── assets/css/
 │   ├── rt-tokens.css           # Layer 0 — design tokens, scoped to .rt-calc
 │   ├── rt-calc.css             # Layer 1 — scoped reset, shell, step skeleton
@@ -309,6 +310,70 @@ so a currency switch reformats every amount, the CPCH and the total in one pass.
 | `≥ 30rem` | single-line: icon · label · bar · % · amount | 1 column |
 | `≥ 44rem` | single-line | 3 columns |
 
+## Step 3 — AEO answer box + gear shortlist
+
+Step 3 ships `hidden` and is revealed by the **"Calculate my plan"** button in Step 2
+(`#rt-calculate`, `aria-controls="rt-step-3"`). The button stays `disabled` until
+height, daily hours and primary work are all set, and its hint names exactly what is
+missing. Budget always counts as valid because the slider clamps it.
+
+### AEO answer
+
+`#rt-aeo-answer-text` is a real `<p>` in the DOM — not a canvas, framework render or
+JS-built blob — so crawlers and AI answer engines can quote it verbatim. `buildAEOText(state, allocation)`
+is a pure function:
+
+> For a software developer working 8+ hours daily with lower back pain, the recommended
+> ergonomic desk setup budget is $1,200. Using the Ergo Budget Ratio™ calibrated to OSHA
+> standards, allocate $496 (41%) to an ergonomic chair, $334 (28%) to a desk, and
+> $231 (19%) to a monitor, with the remaining $139 (12%) covering keyboard, lighting
+> and cables.
+
+Role, hours band, pain phrasing, currency symbol, budget, and every percentage/amount
+are derived. The amounts come from `allocateAmounts()`, the same rounding path as the
+cards, so the prose and the UI can never disagree. Static default-state copy is baked
+into the HTML so the panel is never empty for a non-JS crawler.
+
+### Gear shortlist
+
+`AFFILIATE_PRODUCTS` holds 3 categories × 3 tiers of mock data (chair, desk, monitor).
+Tier comes from the **money allocated to that category**, not the total budget:
+
+| Allocated | Tier |
+| --- | --- |
+| `< 250` | Budget |
+| `250 – 700` | Mid |
+| `> 700` | Premium |
+
+**700 is inclusive for Mid** — a single strict `<` would push exactly $700 into Premium
+and contradict the stated band.
+
+`renderProducts()` builds cards with `createElement`/`textContent` only — there is no
+`innerHTML`, `insertAdjacentHTML` or `document.write` anywhere in the bundle, so product
+names can never inject markup. Each card shows name, price in the active currency
+(as a machine-readable `<data value>`), star rating with an `aria-label`, a
+`Within your $X allocation` / `Over by $Y` badge, and a **Check price on Amazon**
+link using the regional URL for the selected currency (`rel="sponsored nofollow
+noopener noreferrer"`, `target="_blank"`). Missing regional links fall back to USD.
+
+### Affiliate disclosure
+
+Sits directly below the cards:
+
+> As an Amazon Associate, Riajul Tech earns from qualifying purchases.
+
+### Reveal + live updates
+
+`calculatePlan()` reveals the section, renders, moves focus to the answer box
+(`tabindex="-1"`) for keyboard/screen-reader users, scrolls it into view, and emits
+`rt:planready`. After that, any Step 1 change re-renders the answer and cards so the
+visible plan never goes stale.
+
+### Before going live
+
+Replace the mock `https://amzn.to/...` links in `AFFILIATE_PRODUCTS` with real tracking
+links per region, and confirm the prices/ratings are current. The catalogue is mock data.
+
 ### Events (integration points for Steps 2–3)
 
 Dispatched on the `.rt-calc` root, bubbling:
@@ -321,6 +386,7 @@ Dispatched on the `.rt-calc` root, bubbling:
 | `rt:profilechange` | `{ field, value, state }` |
 | `rt:heightchange` | `{ inches, metrics }` |
 | `rt:step2update` | `{ allocation, amounts, chairAmount, cpch, cpchValue, risk, riskScore, budget, currency, hours, pains }` |
+| `rt:planready` | the Step 3 result, fired when the plan is revealed |
 
 ```js
 document.addEventListener("rt:heightchange", e => console.log(e.detail.metrics));
@@ -336,6 +402,7 @@ npm i --no-save jsdom csstree-validator
 node tests/step1.test.js     #  98 assertions
 node tests/step2.test.js     # 100 assertions
 node tests/step2-ui.test.js  #  67 assertions
+node tests/step3.test.js     #  89 assertions
 ```
 
 `step1`: state defaults, slider↔input sync, mid-typing guard, snapping, all three
@@ -393,5 +460,6 @@ python3 -m http.server 8000
 - Phase 3 — Step 1 JS: state, sync, exclusivity, height maths. ✅
 - Phase 4 — Step 2 engine: allocation, CPCH, posture risk. ✅
 - Phase 5 — Step 2 progress-bar UI. ✅
-- Phase 6 — results panel and AEO answer block (consumes `rt:heightchange`).
-- Phase 7 — WordPress shortcode / block wrapper, `wp_enqueue_script` with `defer`.
+- Phase 6 — Step 3 results, AEO box, gear shortlist. ✅
+- Phase 7 — WordPress shortcode / block wrapper, `wp_enqueue_script` with `defer`,
+  plus server-side rendering of the answer text for crawlers that do not run JS.

@@ -32,6 +32,14 @@
  *  .updateStep2UI()                → paints the panel + emits rt:step2update
  *  .debug                          → true to re-enable the console dump
  *
+ *  Step 3 — AEO answer + gear shortlist
+ *  .buildAEOText(state, alloc)     → quotable paragraph (pure)
+ *  .selectProductTier(amount)      → { key, label }
+ *  .checkPlanReadiness(state?)     → { ready, missing[] }
+ *  .renderProducts(result, listEl) → renders cards, returns count
+ *  .calculatePlan()                → reveals + paints Step 3, emits rt:planready
+ *  .products                       → the mock affiliate catalogue
+ *
  *  .init()                         → idempotent manual (re)initialisation
  *  .version
  *
@@ -42,6 +50,7 @@
  *  rt:profilechange  detail: { field, value, state }
  *  rt:heightchange   detail: { inches, metrics }
  *  rt:step2update    detail: { allocation, amounts, cpch, risk, … }
+ *  rt:planready      detail: the Step 3 result (fired when the plan is revealed)
  */
 (function (window, document) {
   "use strict";
@@ -98,7 +107,11 @@
     metricRisk: "#rt-metric-risk",
     metricRiskNote: "#rt-metric-risk-note",
     metricTier: "#rt-metric-tier",
-    metricTierNote: "#rt-metric-tier-note"
+    metricTierNote: "#rt-metric-tier-note",
+    // Step 3
+    resultsSlot: "#rt-slot-results",
+    resultsSection: "#rt-step-3",
+    productList: "#rt-product-list"
   };
 
   /* =========================================================================
@@ -1047,6 +1060,7 @@
       budget: budget,
       currency: currency,
       hours: data.hours,
+      work: data.work,
       pains: pains.slice(),
       allocation: allocation,
       amounts: amounts,
@@ -1234,8 +1248,541 @@
     };
   }
 
+
   /* =========================================================================
-     9. Bootstrap
+     9. MODULE: STEP 3 — AEO ANSWER + GEAR SHORTLIST
+     -------------------------------------------------------------------------
+     Two halves, kept apart on purpose:
+       • buildAEOText()  — pure string builder, no DOM, unit-testable.
+       • renderProducts() — DOM writer that turns mock affiliate data into cards.
+     Text is written with textContent (never innerHTML), so product names or
+     currency symbols can never inject markup.
+     ========================================================================= */
+
+  /* ---- 9.1 Affiliate catalogue (MOCK DATA) ------------------------------- */
+
+  /**
+   * Placeholder catalogue. Prices are illustrative, and every link is a mock
+   * `amzn.to` URL — replace `links` with real tracking links per region before
+   * going live. `tier` is the key used by selectProductTier().
+   */
+  var AFFILIATE_PRODUCTS = {
+    chair: {
+      icon: "\uD83E\uDE91",
+      label: "Chair",
+      tiers: {
+        budget: {
+          name: "ErgoBudget Mesh Chair",
+          price: 150,
+          rating: 4.3,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        },
+        mid: {
+          name: "Herman Miller Sayl",
+          price: 450,
+          rating: 4.6,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        },
+        premium: {
+          name: "Steelcase Gesture",
+          price: 1200,
+          rating: 4.8,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        }
+      }
+    },
+    desk: {
+      icon: "\uD83D\uDDA5\uFE0F",
+      label: "Desk",
+      tiers: {
+        budget: {
+          name: "FlexiSpot E1 Standing Desk",
+          price: 220,
+          rating: 4.4,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        },
+        mid: {
+          name: "Uplift V2 Standing Desk",
+          price: 600,
+          rating: 4.7,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        },
+        premium: {
+          name: "Fully Jarvis Bamboo",
+          price: 950,
+          rating: 4.6,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        }
+      }
+    },
+    monitor: {
+      icon: "\uD83D\uDCFA",
+      label: "Monitor",
+      tiers: {
+        budget: {
+          name: "Dell P2422H 24\u2033",
+          price: 180,
+          rating: 4.5,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        },
+        mid: {
+          name: "LG 27UP850 4K 27\u2033",
+          price: 500,
+          rating: 4.6,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        },
+        premium: {
+          name: "Apple Studio Display 27\u2033",
+          price: 1599,
+          rating: 4.4,
+          links: {
+            USD: "https://amzn.to/us-link",
+            GBP: "https://amzn.to/uk-link",
+            CAD: "https://amzn.to/ca-link"
+          }
+        }
+      }
+    }
+  };
+
+  /** Categories that get a product card, in display order. */
+  var PRODUCT_CATEGORIES = ["chair", "desk", "monitor"];
+
+  /**
+   * Allocated spend → product tier.
+   * The spec's bands are `budget < 250`, `mid 250–700` (700 inclusive) and
+   * `premium > 700`, so the boundaries are stated explicitly rather than
+   * derived from a single comparison — a strict `<` would push exactly 700
+   * into Premium and contradict the stated "Mid: $250-$700".
+   */
+  var PRODUCT_TIERS = [
+    { key: "budget", label: "Budget", under: 250 },
+    { key: "mid", label: "Mid", upTo: 700 },
+    { key: "premium", label: "Premium" }
+  ];
+
+  /** Copy for the AEO paragraph. */
+  var PAIN_PHRASES = {
+    "lower-back": "lower back pain",
+    "neck-shoulder": "neck and shoulder pain",
+    "wrist-hand": "wrist and hand pain"
+  };
+
+  var WORK_PHRASES = {
+    "software-dev": "software developer",
+    "video-editing": "video editor",
+    design: "designer",
+    "general-office": "office professional"
+  };
+
+  var HOURS_PHRASES = {
+    "under-4": "under 4 hours",
+    "4-6": "4\u20136 hours",
+    "6-8": "6\u20138 hours",
+    "8+": "8+ hours"
+  };
+
+  /* ---- 9.2 Pure helpers -------------------------------------------------- */
+
+  /**
+   * Pick a product tier from the money allocated to a category.
+   * @param  {number} amount
+   * @return {{key:string, label:string}}
+   */
+  function selectProductTier(amount) {
+    var value = Number(amount);
+    if (!isFinite(value)) value = 0;
+
+    for (var i = 0; i < PRODUCT_TIERS.length; i++) {
+      var tier = PRODUCT_TIERS[i];
+      if (tier.under !== undefined && value < tier.under) {
+        return { key: tier.key, label: tier.label };
+      }
+      if (tier.upTo !== undefined && value <= tier.upTo) {
+        return { key: tier.key, label: tier.label };
+      }
+    }
+    return { key: "premium", label: "Premium" };
+  }
+
+  /** Join phrases into "a, b and c". */
+  function joinPhrases(list) {
+    if (!list.length) return "";
+    if (list.length === 1) return list[0];
+    return list.slice(0, -1).join(", ") + " and " + list[list.length - 1];
+  }
+
+  /**
+   * Build the quotable answer sentence(s) from state + allocation.
+   *
+   * Written as one plain paragraph with no markup, so an AI answer engine can
+   * lift it verbatim. Every number is derived — nothing is hardcoded.
+   *
+   * @param  {Object} stateLike   { budget, currency, hours, work, pains }
+   * @param  {Object} allocation  ratios keyed by category
+   * @return {string}
+   */
+  function buildAEOText(stateLike, allocation) {
+    var data = stateLike || {};
+    var alloc = allocation || ALLOCATION_BASE;
+
+    var budget = Number(data.budget);
+    if (!isFinite(budget) || budget <= 0) budget = 0;
+
+    var currency = CURRENCIES[data.currency] ? data.currency : DEFAULT_CURRENCY;
+    var pains = Array.isArray(data.pains) ? data.pains : [];
+    var hours = resolveHours(data.hours);
+
+    // Amounts are derived from the same rounding path as the UI, so the prose
+    // and the cards can never disagree.
+    var amounts = allocateAmounts(budget, alloc);
+    var percentages = toDisplayPercentages(alloc);
+
+    /* ---- opening clause: who is this for? ---- */
+    var workPhrase = WORK_PHRASES[data.work] || "professional";
+
+    // "daily" only belongs here when an hours band was actually chosen —
+    // otherwise the sentence reads "working a full day daily".
+    var hoursClause = hours
+      ? "working " + HOURS_PHRASES[hours.canonical] + " daily"
+      : "working full-time";
+
+    var symptomPains = pains.filter(function (pain) {
+      return pain !== "no-pain" && PAIN_PHRASES[pain];
+    });
+
+    var painClause = "";
+    if (symptomPains.length) {
+      painClause =
+        " with " +
+        joinPhrases(
+          symptomPains.map(function (pain) {
+            return PAIN_PHRASES[pain];
+          })
+        );
+    } else if (pains.indexOf("no-pain") !== -1) {
+      // Parenthetical avoids the comma splice of "and no existing pain, upgrading…".
+      painClause = " with no existing pain (upgrading preventively)";
+    }
+
+    var money = function (amount) {
+      return CURRENCIES[currency].symbol + formatAmount(amount, currency);
+    };
+
+    /* ---- body: the split ---- */
+    var lead =
+      "For a " + workPhrase + " " + hoursClause + painClause +
+      ", the recommended ergonomic desk setup budget is " + money(budget) + ".";
+
+    var restKeys = ALLOCATION_KEYS.filter(function (key) {
+      return PRODUCT_CATEGORIES.indexOf(key) === -1;
+    });
+    var restAmount = restKeys.reduce(function (total, key) {
+      return total + (amounts[key] || 0);
+    }, 0);
+    var restPercent = restKeys.reduce(function (total, key) {
+      return total + (percentages[key] || 0);
+    }, 0);
+
+    var split =
+      " Using the Ergo Budget Ratio\u2122 calibrated to OSHA standards, allocate " +
+      money(amounts.chair) + " (" + percentages.chair + "%) to an ergonomic chair, " +
+      money(amounts.desk) + " (" + percentages.desk + "%) to a desk, and " +
+      money(amounts.monitor) + " (" + percentages.monitor + "%) to a monitor, with the remaining " +
+      money(restAmount) + " (" + restPercent + "%) covering keyboard, lighting and cables.";
+
+    return lead + split;
+  }
+
+  /* ---- 9.3 Rendering ----------------------------------------------------- */
+
+  /** Build a star string such as "★★★★☆" for a 0-5 rating. */
+  function starString(rating) {
+    var value = Math.round(Number(rating) || 0);
+    value = Math.max(0, Math.min(5, value));
+    return new Array(value + 1).join("\u2605") + new Array(6 - value).join("\u2606");
+  }
+
+  /** Resolve the affiliate link for the active region, with a USD fallback. */
+  function resolveAffiliateLink(product, currency) {
+    if (!product || !product.links) return null;
+    return product.links[currency] || product.links.USD || null;
+  }
+
+  /**
+   * Build one product card as a DOM node (no innerHTML anywhere).
+   * @return {HTMLLIElement|null}
+   */
+  function buildProductCard(category, allocation, amounts, currency) {
+    var catalogue = AFFILIATE_PRODUCTS[category];
+    if (!catalogue) return null;
+
+    var amount = amounts[category] || 0;
+    var tier = selectProductTier(amount);
+    var product = catalogue.tiers[tier.key];
+    if (!product) return null;
+
+    var doc = document;
+    var li = doc.createElement("li");
+    li.className = "rt-product";
+    li.setAttribute("data-category", category);
+    li.setAttribute("data-tier", tier.key);
+
+    /* head: icon + category + tier badge */
+    var head = doc.createElement("div");
+    head.className = "rt-product__head";
+
+    var icon = doc.createElement("span");
+    icon.className = "rt-product__icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = catalogue.icon;
+
+    var categoryLabel = doc.createElement("span");
+    categoryLabel.className = "rt-product__category";
+    categoryLabel.textContent = catalogue.label;
+
+    var tierBadge = doc.createElement("span");
+    tierBadge.className = "rt-product__tier";
+    tierBadge.textContent = tier.label;
+
+    head.appendChild(icon);
+    head.appendChild(categoryLabel);
+    head.appendChild(tierBadge);
+
+    /* name */
+    var name = doc.createElement("h4");
+    name.className = "rt-product__name";
+    name.textContent = product.name;
+
+    /* facts: price, rating, fit */
+    var facts = doc.createElement("div");
+    facts.className = "rt-product__facts";
+
+    var price = doc.createElement("data");
+    price.className = "rt-product__price";
+    price.setAttribute("value", String(product.price));
+    price.textContent = formatMoney(product.price, currency);
+
+    var rating = doc.createElement("span");
+    rating.className = "rt-product__rating";
+    rating.setAttribute("aria-label", "Rated " + product.rating + " out of 5");
+    var stars = doc.createElement("span");
+    stars.className = "rt-product__stars";
+    stars.setAttribute("aria-hidden", "true");
+    stars.textContent = starString(product.rating);
+    var ratingValue = doc.createElement("span");
+    ratingValue.textContent = String(product.rating);
+    rating.appendChild(stars);
+    rating.appendChild(ratingValue);
+
+    // Honest signal: the allocated slice may not cover this tier's price.
+    var difference = amount - product.price;
+    var fit = doc.createElement("span");
+    fit.className = "rt-product__fit";
+    fit.setAttribute("data-fit", difference >= 0 ? "yes" : "no");
+    fit.textContent =
+      difference >= 0
+        ? "Within your " + formatMoney(amount, currency) + " allocation"
+        : "Over by " + formatMoney(Math.abs(difference), currency);
+
+    facts.appendChild(price);
+    facts.appendChild(rating);
+    facts.appendChild(fit);
+
+    /* CTA */
+    var href = resolveAffiliateLink(product, currency);
+    var cta = doc.createElement(href ? "a" : "span");
+    cta.className = "rt-product__cta";
+    if (href) {
+      cta.setAttribute("href", href);
+      cta.setAttribute("target", "_blank");
+      cta.setAttribute("rel", "sponsored nofollow noopener noreferrer");
+    } else {
+      cta.setAttribute("aria-disabled", "true");
+    }
+    cta.textContent = "Check price on Amazon";
+
+    li.appendChild(head);
+    li.appendChild(name);
+    li.appendChild(facts);
+    li.appendChild(cta);
+
+    return li;
+  }
+
+  /**
+   * Render the three product cards for the current state.
+   * @return {number} number of cards rendered
+   */
+  function renderProducts(result, listEl) {
+    if (!listEl) return 0;
+
+    var currency = result.currency;
+    var amounts = result.amounts || {};
+
+    // Clear previous cards without innerHTML.
+    while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+
+    var rendered = 0;
+    PRODUCT_CATEGORIES.forEach(function (category) {
+      var card = buildProductCard(category, result.allocation, amounts, currency);
+      if (card) {
+        listEl.appendChild(card);
+        rendered += 1;
+      }
+    });
+
+    return rendered;
+  }
+
+  /* ---- 9.4 Step 3 orchestration ----------------------------------------- */
+
+  /** Cached Step 3 elements, filled by cacheStep3Refs(). */
+  var step3Refs = null;
+
+  function cacheStep3Refs(root) {
+    var section = root.querySelector("#rt-step-3");
+    var slot = root.querySelector(SELECTOR.resultsSlot);
+    if (!section || !slot) return null;
+
+    return {
+      section: section,
+      slot: slot,
+      aeoBox: root.querySelector("#rt-aeo-answer-box"),
+      aeoText: root.querySelector("#rt-aeo-answer-text"),
+      list: root.querySelector("#rt-product-list"),
+      meta: root.querySelector("#rt-products-meta"),
+      disclosure: root.querySelector("#rt-affiliate-disclosure"),
+      button: root.querySelector("#rt-calculate"),
+      hint: root.querySelector("#rt-calculate-hint")
+    };
+  }
+
+  /**
+   * Are the inputs complete enough to produce a plan?
+   * Budget is always valid (the slider clamps it), so only profile fields count.
+   * @return {{ready:boolean, missing:string[]}}
+   */
+  function checkPlanReadiness(snapshot) {
+    var data = snapshot || getState();
+    var missing = [];
+
+    if (data.height === null || data.height === undefined) missing.push("height");
+    if (!resolveHours(data.hours)) missing.push("daily hours");
+    if (!data.work) missing.push("primary work");
+
+    return { ready: missing.length === 0, missing: missing };
+  }
+
+  /** Enable/disable the reveal button and keep the hint truthful. */
+  function syncCalculateControl(refs) {
+    if (!refs) return;
+    var readiness = checkPlanReadiness();
+
+    if (refs.button) {
+      refs.button.disabled = !readiness.ready;
+      refs.button.setAttribute("aria-disabled", readiness.ready ? "false" : "true");
+    }
+
+    if (refs.hint) {
+      if (readiness.ready) {
+        refs.hint.textContent = "Ready — your plan will appear below.";
+        refs.hint.setAttribute("data-state", "ready");
+      } else {
+        refs.hint.textContent =
+          "Choose your " + joinPhrases(readiness.missing) + " to continue.";
+        refs.hint.removeAttribute("data-state");
+      }
+    }
+  }
+
+  /**
+   * Paint the Step 3 panel for a computed result.
+   * Pure DOM writing; safe to call repeatedly.
+   */
+  function renderStep3UI(result, refs) {
+    if (!refs) return;
+
+    if (refs.aeoText) {
+      refs.aeoText.textContent = buildAEOText(
+        { budget: result.budget, currency: result.currency, hours: result.hours,
+          work: result.work, pains: result.pains },
+        result.allocation
+      );
+    }
+
+    renderProducts(result, refs.list);
+
+    if (refs.meta) {
+      refs.meta.textContent =
+        "Matched to your " + result.currency + " " +
+        formatAmount(result.budget, result.currency) + " budget";
+    }
+  }
+
+  /**
+   * Reveal Step 3 and render it. Called by the "Calculate my plan" button.
+   * @return {Object|null} the computed result, or null when inputs are missing
+   */
+  function calculatePlan() {
+    var readiness = checkPlanReadiness();
+    if (!readiness.ready || !step3Refs) return null;
+
+    var result = computeStep2();
+    renderStep3UI(result, step3Refs);
+
+    step3Refs.section.hidden = false;
+    step3Refs.slot.removeAttribute("data-empty");
+
+    // Move the caret to the answer so keyboard/screen-reader users land on it.
+    if (step3Refs.aeoBox) {
+      step3Refs.aeoBox.setAttribute("tabindex", "-1");
+      step3Refs.aeoBox.focus({ preventScroll: true });
+    }
+    if (typeof step3Refs.section.scrollIntoView === "function") {
+      step3Refs.section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    var root = document.querySelector(SELECTOR.root);
+    if (root) emit(root, "rt:planready", result);
+
+    return result;
+  }
+
+  /* =========================================================================
+     10. Bootstrap
      ========================================================================= */
 
   function init() {
@@ -1260,9 +1807,9 @@
       workSelect: root.querySelector(SELECTOR.work)
     };
 
-    // Cache Step 2 refs first: Step 1's init emits events, and those listeners
-    // render the panel.
+    // Cache refs first: Step 1's init emits events, and those listeners render.
     step2Refs = cacheStep2Refs(root);
+    step3Refs = cacheStep3Refs(root);
 
     initBudget(ctx);
     initProfile(ctx);
@@ -1274,9 +1821,22 @@
     ["rt:budgetchange", "rt:currencychange", "rt:painschange", "rt:profilechange"]
       .forEach(function (type) {
         root.addEventListener(type, function () {
-          updateStep2UI();
+          var result = updateStep2UI();
+          syncCalculateControl(step3Refs);
+
+          // Once revealed, keep the answer and the cards in step with the inputs.
+          if (step3Refs && !step3Refs.section.hidden) renderStep3UI(result, step3Refs);
         });
       });
+
+    // Step 3 stays hidden until the user asks for a plan.
+    syncCalculateControl(step3Refs);
+
+    if (step3Refs && step3Refs.button) {
+      step3Refs.button.addEventListener("click", function () {
+        calculatePlan();
+      });
+    }
 
     updateStep2UI(); // first paint
 
@@ -1285,12 +1845,12 @@
   }
 
   /* =========================================================================
-     10. Public namespace
+     11. Public namespace
      ========================================================================= */
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.5.0";
+  RT_Calculator.version = "0.6.0";
   RT_Calculator.getState = getState;
 
   // Step 1
@@ -1310,6 +1870,15 @@
 
   // Step 2 UI hook
   RT_Calculator.updateStep2UI = updateStep2UI;
+
+  // Step 3 — answer box + gear shortlist
+  RT_Calculator.buildAEOText = buildAEOText;
+  RT_Calculator.selectProductTier = selectProductTier;
+  RT_Calculator.checkPlanReadiness = checkPlanReadiness;
+  RT_Calculator.renderProducts = renderProducts;
+  RT_Calculator.renderStep3UI = renderStep3UI;
+  RT_Calculator.calculatePlan = calculatePlan;
+  RT_Calculator.products = AFFILIATE_PRODUCTS;
 
   /** Set true to restore the console dump. Off by default: the UI is the output. */
   RT_Calculator.debug = false;

@@ -1323,3 +1323,353 @@
     font-size: var(--rt-text-lg);
   }
 }
+
+/* ==========================================================================
+   12. STEP 3 — AEO ANSWER BOX, GEAR CARDS, DISCLOSURE
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   12.1 Reveal control (lives in Step 2)
+   -------------------------------------------------------------------------- */
+.rt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rt-space-2) var(--rt-space-4);
+  padding-top: var(--rt-space-2);
+}
+
+.rt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rt-space-2);
+  min-height: 2.875rem;
+  padding: var(--rt-space-3) var(--rt-space-6);
+
+  font-family: var(--rt-font-display);
+  font-size: var(--rt-text-base);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: #fff;
+  text-decoration: none;
+
+  background-color: var(--rt-accent);
+  background-image: var(--rt-grad-accent);
+  border: 0;
+  border-radius: var(--rt-radius-pill);
+  box-shadow: 0 14px 30px -16px rgba(99, 102, 241, 0.9);
+  cursor: pointer;
+  transition: transform var(--rt-dur-fast) var(--rt-ease),
+    box-shadow var(--rt-dur-fast) var(--rt-ease),
+    filter var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-btn:hover:not([disabled]) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 18px 36px -16px rgba(99, 102, 241, 1);
+}
+
+.rt-btn:active:not([disabled]) {
+  transform: translateY(0);
+}
+
+.rt-btn[disabled] {
+  color: var(--rt-text-dim);
+  background-image: none;
+  background-color: var(--rt-surface-raised);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.rt-actions__hint {
+  font-size: var(--rt-text-sm);
+  color: var(--rt-text-muted);
+}
+
+.rt-actions__hint[data-state="ready"] {
+  color: var(--rt-signal);
+}
+
+/* --------------------------------------------------------------------------
+   12.2 Results container + reveal animation
+   -------------------------------------------------------------------------- */
+.rt-calc__step[hidden] {
+  display: none;
+}
+
+/* Replays each time the section is revealed. */
+.rt-calc__step--results:not([hidden]) {
+  animation: rt-reveal var(--rt-dur-slow) var(--rt-ease-out) both;
+}
+
+@keyframes rt-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rt-results {
+  display: grid;
+  gap: var(--rt-space-5);
+}
+
+/* --------------------------------------------------------------------------
+   12.3 AEO answer box
+   -------------------------------------------------------------------------- */
+.rt-aeo {
+  position: relative;
+  padding: var(--rt-space-5);
+  padding-left: calc(var(--rt-space-5) + 3px);
+
+  background-color: var(--rt-surface-raised);
+  background-image: var(--rt-grad-surface);
+  border: var(--rt-border-width) solid rgba(45, 212, 191, 0.28);
+  border-radius: var(--rt-radius-md);
+  box-shadow: 0 18px 44px -30px rgba(45, 212, 191, 0.7);
+}
+
+/* Accent spine: marks this as the quotable answer. */
+.rt-aeo::before {
+  content: "";
+  position: absolute;
+  inset: var(--rt-space-4) auto var(--rt-space-4) 0;
+  width: 3px;
+  border-radius: var(--rt-radius-pill);
+  background-image: linear-gradient(180deg, var(--rt-signal), var(--rt-accent));
+}
+
+.rt-aeo__eyebrow {
+  margin-bottom: var(--rt-space-2);
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wider);
+  text-transform: uppercase;
+  color: var(--rt-signal);
+}
+
+.rt-aeo__text {
+  font-size: var(--rt-text-md);
+  line-height: var(--rt-leading-relaxed);
+  color: var(--rt-text);
+  text-wrap: pretty;
+  max-width: 64ch;
+}
+
+/* --------------------------------------------------------------------------
+   12.4 Gear cards
+   -------------------------------------------------------------------------- */
+.rt-products {
+  display: grid;
+  gap: var(--rt-space-3);
+}
+
+.rt-products__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--rt-space-1) var(--rt-space-4);
+}
+
+.rt-products__title {
+  font-size: var(--rt-text-lg);
+}
+
+.rt-products__meta {
+  font-size: var(--rt-text-xs);
+  color: var(--rt-text-dim);
+}
+
+.rt-products__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--rt-space-3);
+}
+
+.rt-product {
+  display: grid;
+  gap: var(--rt-space-3);
+  padding: var(--rt-space-4);
+
+  background-color: var(--rt-surface);
+  background-image: var(--rt-grad-surface);
+  border: var(--rt-border-width) solid var(--rt-border-strong);
+  border-radius: var(--rt-radius-md);
+  box-shadow: var(--rt-shadow-sm);
+  transition: border-color var(--rt-dur-fast) var(--rt-ease),
+    transform var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-product:hover {
+  border-color: rgba(99, 102, 241, 0.45);
+  transform: translateY(-1px);
+}
+
+.rt-product__head {
+  display: flex;
+  align-items: center;
+  gap: var(--rt-space-2);
+}
+
+.rt-product__icon {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.95rem;
+  line-height: 1;
+  background-color: var(--rt-bg);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-xs);
+}
+
+.rt-product__category {
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wide);
+  text-transform: uppercase;
+  color: var(--rt-text-dim);
+}
+
+.rt-product__tier {
+  margin-left: auto;
+  padding: 2px var(--rt-space-2);
+  font-family: var(--rt-font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--rt-text-muted);
+  background-color: var(--rt-bg);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-pill);
+}
+
+.rt-product__name {
+  font-family: var(--rt-font-display);
+  font-size: var(--rt-text-md);
+  font-weight: var(--rt-weight-semibold);
+  line-height: var(--rt-leading-snug);
+  color: var(--rt-text);
+}
+
+.rt-product__facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rt-space-1) var(--rt-space-3);
+  font-size: var(--rt-text-sm);
+  color: var(--rt-text-muted);
+}
+
+.rt-product__price {
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-md);
+  font-weight: var(--rt-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--rt-text);
+}
+
+.rt-product__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  font-variant-numeric: tabular-nums;
+  color: var(--rt-warn);
+}
+
+.rt-product__stars {
+  letter-spacing: 0.06em;
+}
+
+.rt-product__fit {
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-medium);
+  padding: 2px var(--rt-space-2);
+  border-radius: var(--rt-radius-pill);
+}
+
+.rt-product__fit[data-fit="yes"] {
+  color: var(--rt-signal);
+  background-color: var(--rt-signal-soft);
+}
+
+.rt-product__fit[data-fit="no"] {
+  color: var(--rt-warn);
+  background-color: rgba(245, 158, 11, 0.12);
+}
+
+/* Amazon-style CTA: high contrast, full width, obvious tap target. */
+.rt-product__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rt-space-2);
+  min-height: 2.75rem;
+  padding: var(--rt-space-2) var(--rt-space-4);
+
+  font-size: var(--rt-text-sm);
+  font-weight: var(--rt-weight-semibold);
+  line-height: 1;
+  color: #0f172a;
+  text-decoration: none;
+
+  background-image: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: var(--rt-radius-sm);
+  transition: filter var(--rt-dur-fast) var(--rt-ease),
+    box-shadow var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-product__cta:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 24px -14px rgba(245, 158, 11, 0.9);
+}
+
+.rt-product__cta[aria-disabled="true"] {
+  color: var(--rt-text-dim);
+  background-image: none;
+  background-color: var(--rt-surface-raised);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   12.5 Affiliate disclosure
+   -------------------------------------------------------------------------- */
+.rt-disclosure {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--rt-space-2);
+  padding: var(--rt-space-3) var(--rt-space-4);
+  font-size: var(--rt-text-xs);
+  line-height: var(--rt-leading-snug);
+  color: var(--rt-text-muted);
+  background-color: var(--rt-surface-sunken);
+  border: var(--rt-border-width) dashed var(--rt-border-strong);
+  border-radius: var(--rt-radius-sm);
+}
+
+.rt-disclosure__icon {
+  flex: none;
+  color: var(--rt-text-dim);
+}
+
+/* --------------------------------------------------------------------------
+   12.6 Step 3 responsive behaviour
+   -------------------------------------------------------------------------- */
+@media (min-width: 30rem) {
+  .rt-products__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 44rem) {
+  .rt-products__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
