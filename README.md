@@ -1,1 +1,76 @@
-# ergonomic-workspace-planner
+# Smart Ergonomic Calculator
+
+A modular, namespaced calculator widget for WordPress. Everything renders inside
+`.rt-calc`, so it drops into any theme without inheriting or leaking styles.
+
+**Phase 1 (current): structure only.** HTML skeleton + design tokens. No
+JavaScript, no form fields, no logic.
+
+## Structure
+
+```
+.
+├── index.html                  # Static preview of the exact markup the plugin renders
+├── assets/css/
+│   ├── rt-tokens.css           # Layer 0 — design tokens, scoped to .rt-calc
+│   ├── rt-calc.css             # Layer 1 — scoped reset, shell, step skeleton
+│   └── demo-page.css           # Preview harness only (not shipped)
+└── README.md
+```
+
+## HTML contract
+
+| Element | Purpose |
+| --- | --- |
+| `.rt-calc` | Namespaced root. All tokens and styles live under it. |
+| `#rt-step-1` / `#rt-slot-inputs` | Step 1 — inputs (empty mount point) |
+| `#rt-step-2` / `#rt-slot-budget` | Step 2 — budget preview (empty mount point) |
+| `#rt-step-3` / `#rt-slot-results` | Step 3 — results + AEO answer box (empty, `aria-live="polite"`) |
+
+Each `<section>` carries `data-step="1|2|3"`, an `aria-labelledby` pointing at
+its heading, and a `.rt-calc__slot` mount point. Slots are flagged
+`data-empty="true"` while they hold only their hint; removing that attribute
+(or swapping in real markup) collapses the placeholder styling automatically.
+
+## Design tokens
+
+All tokens are declared on `.rt-calc` — never `:root` — so a theme can neither
+override them by accident nor inherit them.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--rt-bg` | `#0f172a` | Root background |
+| `--rt-surface` | `#1e293b` | Card background |
+| `--rt-surface-raised` / `--rt-surface-sunken` | `#243248` / `#0b1220` | Nested panels |
+| `--rt-text` / `--rt-text-muted` / `--rt-text-dim` | `#e8eef9` / `#94a3b8` / `#64748b` | Type hierarchy |
+| `--rt-accent` / `--rt-signal` | `#6366f1` / `#2dd4bf` | Primary / highlight |
+| `--rt-font-sans` / `--rt-font-display` / `--rt-font-mono` | Inter / Sora / system mono | Typography |
+| `--rt-space-1…16` | 4pt scale | Spacing |
+| `--rt-radius-*`, `--rt-shadow-*`, `--rt-ease`, `--rt-dur-*` | — | Radii, elevation, motion |
+
+Changing the brand is a one-file job: override the tokens, leave the components
+untouched.
+
+## Conventions for upcoming phases
+
+1. Keep every selector inside `.rt-calc`; prefix classes with `rt-`.
+2. One module per step — mount into `#rt-slot-*` rather than editing sections.
+3. No global resets (`body`, `h1`, `*`) and no `!important` outside the
+   reduced-motion block.
+4. Enqueue CSS through WordPress (`wp_enqueue_style`) in dependency order:
+   `rt-tokens` → `rt-calc` → module styles.
+
+## Preview
+
+Open `index.html` directly, or serve the folder:
+
+```bash
+python3 -m http.server 8000
+```
+
+## Next phases
+
+- Phase 2 — Step 1 input controls (segmented choices, sliders, units).
+- Phase 3 — calculation model + budget tiering.
+- Phase 4 — results panel and AEO answer block.
+- Phase 5 — WordPress shortcode / block wrapper and asset enqueueing.

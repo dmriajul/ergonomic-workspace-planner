@@ -1,0 +1,358 @@
+/* ==========================================================================
+   rt-calc.css
+   Smart Ergonomic Calculator — scoped base + skeleton (layer 1)
+   --------------------------------------------------------------------------
+   Rules of engagement:
+   1. Nothing outside `.rt-calc` is styled. No body/html resets, no h1-h6 base.
+   2. All class names are prefixed with `rt-` so theme CSS cannot collide.
+   3. This file is presentation only — no JavaScript, no component modules.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Scoped reset
+   -------------------------------------------------------------------------- */
+.rt-calc,
+.rt-calc *,
+.rt-calc *::before,
+.rt-calc *::after {
+  box-sizing: border-box;
+}
+
+.rt-calc {
+  margin: 0;
+  padding: 0;
+}
+
+.rt-calc :where(p, h1, h2, h3, h4, figure, ol, ul, dl, dd) {
+  margin: 0;
+  padding: 0;
+}
+
+.rt-calc :where(ol, ul) {
+  list-style: none;
+}
+
+.rt-calc :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+.rt-calc :where(svg) {
+  display: block;
+  max-width: 100%;
+}
+
+.rt-calc :where(a) {
+  color: var(--rt-signal);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+/* --------------------------------------------------------------------------
+   2. Root shell
+   -------------------------------------------------------------------------- */
+.rt-calc {
+  /* Gives the block its own stacking + containing context inside any theme. */
+  position: relative;
+  isolation: isolate;
+  display: block;
+
+  width: 100%;
+  max-width: var(--rt-max-width);
+  margin-inline: auto;
+  padding: clamp(1.25rem, 4vw, 2.5rem) var(--rt-gutter);
+
+  font-family: var(--rt-font-sans);
+  font-size: var(--rt-text-base);
+  font-weight: var(--rt-weight-regular);
+  line-height: var(--rt-leading-relaxed);
+  color: var(--rt-text);
+  letter-spacing: 0;
+
+  background-color: var(--rt-bg);
+  /* Faint aurora so the flat navy never reads as a dead panel. */
+  background-image:
+    radial-gradient(
+      60rem 30rem at 12% -10%,
+      rgba(99, 102, 241, 0.16),
+      transparent 60%
+    ),
+    radial-gradient(
+      45rem 26rem at 105% 8%,
+      rgba(45, 212, 191, 0.1),
+      transparent 62%
+    );
+  border-radius: var(--rt-radius-xl);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings inherit the display face; size is set per component. */
+.rt-calc :where(h1, h2, h3) {
+  font-family: var(--rt-font-display);
+  font-weight: var(--rt-weight-semibold);
+  line-height: var(--rt-leading-tight);
+  letter-spacing: var(--rt-tracking-tight);
+  color: var(--rt-text);
+}
+
+/* --------------------------------------------------------------------------
+   3. Masthead
+   -------------------------------------------------------------------------- */
+.rt-calc__header {
+  display: grid;
+  gap: var(--rt-space-3);
+  padding-bottom: var(--rt-space-6);
+  border-bottom: var(--rt-border-width) solid var(--rt-border);
+}
+
+.rt-calc__badge {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rt-space-2);
+  padding: var(--rt-space-1) var(--rt-space-3);
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wide);
+  text-transform: uppercase;
+  color: var(--rt-signal);
+  background-color: var(--rt-signal-soft);
+  border: var(--rt-border-width) solid rgba(45, 212, 191, 0.24);
+  border-radius: var(--rt-radius-pill);
+}
+
+.rt-calc__badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.18);
+}
+
+.rt-calc__title {
+  font-size: var(--rt-text-2xl);
+  max-width: 24ch;
+}
+
+.rt-calc__lede {
+  max-width: 58ch;
+  font-size: var(--rt-text-md);
+  color: var(--rt-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   4. Static step rail (no JS — purely a progress landmark)
+   -------------------------------------------------------------------------- */
+.rt-calc__rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rt-space-2) var(--rt-space-4);
+  padding-block: var(--rt-space-5);
+  font-size: var(--rt-text-sm);
+  color: var(--rt-text-dim);
+}
+
+.rt-calc__rail-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rt-space-2);
+}
+
+.rt-calc__rail-num {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-xs);
+  color: var(--rt-text-muted);
+  background-color: var(--rt-surface-sunken);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: 50%;
+}
+
+.rt-calc__rail-item:first-child .rt-calc__rail-num {
+  color: var(--rt-text);
+  background-color: var(--rt-accent-soft);
+  border-color: rgba(99, 102, 241, 0.42);
+}
+
+.rt-calc__rail-sep {
+  flex: 1 1 1.5rem;
+  min-width: 1.5rem;
+  height: 1px;
+  background-image: var(--rt-grad-hairline);
+}
+
+/* --------------------------------------------------------------------------
+   5. Step containers
+   -------------------------------------------------------------------------- */
+.rt-calc__steps {
+  display: grid;
+  gap: var(--rt-space-5);
+}
+
+.rt-calc__step {
+  position: relative;
+  display: grid;
+  gap: var(--rt-space-5);
+  padding: var(--rt-section-pad);
+
+  background-color: var(--rt-surface);
+  background-image: var(--rt-grad-surface);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-lg);
+  box-shadow: var(--rt-shadow-md);
+}
+
+/* Hairline highlight along the top edge of each card. */
+.rt-calc__step::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background-image: var(--rt-grad-hairline);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.rt-calc__step-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--rt-space-3);
+}
+
+.rt-calc__step-index {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding-inline: var(--rt-space-2);
+
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wide);
+  color: var(--rt-text);
+
+  background-image: var(--rt-grad-surface);
+  background-color: var(--rt-surface-raised);
+  border: var(--rt-border-width) solid var(--rt-border-strong);
+  border-radius: var(--rt-radius-sm);
+}
+
+.rt-calc__step-meta {
+  display: grid;
+  gap: var(--rt-space-1);
+  min-width: 0;
+}
+
+.rt-calc__step-eyebrow {
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wider);
+  text-transform: uppercase;
+  color: var(--rt-text-dim);
+}
+
+.rt-calc__step-title {
+  font-size: var(--rt-text-xl);
+}
+
+.rt-calc__step-sub {
+  font-size: var(--rt-text-base);
+  color: var(--rt-text-muted);
+  max-width: 52ch;
+}
+
+/* --------------------------------------------------------------------------
+   6. Mount points — intentionally empty until their modules land
+   -------------------------------------------------------------------------- */
+.rt-calc__slot {
+  display: grid;
+  place-items: center;
+  min-height: 7.5rem;
+  padding: var(--rt-space-4);
+
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-xs);
+  letter-spacing: 0.04em;
+  color: var(--rt-text-dim);
+  text-align: center;
+
+  background-color: var(--rt-surface-sunken);
+  border: 1px dashed var(--rt-border-strong);
+  border-radius: var(--rt-radius-md);
+}
+
+/* Empty slots show their hint; populated slots drop straight into the layout. */
+.rt-calc__slot:not([data-empty="true"]) {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.rt-calc__slot[data-empty="true"] > :not(.rt-calc__slot-hint) {
+  display: none;
+}
+
+.rt-calc__slot-hint {
+  max-width: 34ch;
+  line-height: var(--rt-leading-snug);
+}
+
+/* --------------------------------------------------------------------------
+   7. Footnote
+   -------------------------------------------------------------------------- */
+.rt-calc__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rt-space-2) var(--rt-space-4);
+  justify-content: space-between;
+  margin-top: var(--rt-space-6);
+  padding-top: var(--rt-space-4);
+  font-size: var(--rt-text-xs);
+  color: var(--rt-text-dim);
+  border-top: var(--rt-border-width) solid var(--rt-border);
+}
+
+/* --------------------------------------------------------------------------
+   8. States & preferences
+   -------------------------------------------------------------------------- */
+.rt-calc :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--rt-signal);
+  outline-offset: 2px;
+  border-radius: var(--rt-radius-xs);
+}
+
+/* Screen-reader utility, scoped to the plugin. */
+.rt-calc__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rt-calc *,
+  .rt-calc *::before,
+  .rt-calc *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

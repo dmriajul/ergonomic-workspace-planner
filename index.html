@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Ergonomic Calculator — Skeleton</title>
+  <meta name="description" content="Step 1 scaffold: dark-mode shell and namespaced containers for the Smart Ergonomic Calculator." />
+
+  <!-- Optional display + body faces. Falls back to the system stack offline. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Plugin layers: tokens first, then scoped base. -->
+  <link rel="stylesheet" href="assets/css/rt-tokens.css" />
+  <link rel="stylesheet" href="assets/css/rt-calc.css" />
+
+  <!-- Demo page only. Never shipped in the plugin. -->
+  <link rel="stylesheet" href="assets/css/demo-page.css" />
+</head>
+<body class="rt-demo">
+  <!--
+    WordPress note: this exact block is what the shortcode / block will render.
+    Everything visual is namespaced under .rt-calc, so no theme styles escape.
+  -->
+  <div class="rt-calc" id="rt-calculator" data-rt-calc>
+
+    <!-- ---------- Masthead ---------- -->
+    <header class="rt-calc__header">
+      <span class="rt-calc__badge">Ergonomics Engine</span>
+      <h1 class="rt-calc__title">Smart Ergonomic Calculator</h1>
+      <p class="rt-calc__lede">
+        Score your desk setup, size your budget, and get a prioritised
+        upgrade plan — in three short steps.
+      </p>
+    </header>
+
+    <!-- ---------- Static progress landmark ---------- -->
+    <nav class="rt-calc__rail" aria-label="Calculator progress">
+      <span class="rt-calc__rail-item">
+        <span class="rt-calc__rail-num">1</span> Inputs
+      </span>
+      <span class="rt-calc__rail-sep" aria-hidden="true"></span>
+      <span class="rt-calc__rail-item">
+        <span class="rt-calc__rail-num">2</span> Budget
+      </span>
+      <span class="rt-calc__rail-sep" aria-hidden="true"></span>
+      <span class="rt-calc__rail-item">
+        <span class="rt-calc__rail-num">3</span> Results
+      </span>
+    </nav>
+
+    <!-- ---------- Steps ---------- -->
+    <div class="rt-calc__steps">
+
+      <!-- Step 1: Inputs -->
+      <section
+        class="rt-calc__step"
+        id="rt-step-1"
+        data-step="1"
+        aria-labelledby="rt-step-1-title"
+      >
+        <header class="rt-calc__step-head">
+          <span class="rt-calc__step-index" aria-hidden="true">01</span>
+          <div class="rt-calc__step-meta">
+            <p class="rt-calc__step-eyebrow">Step 1</p>
+            <h2 class="rt-calc__step-title" id="rt-step-1-title">Your setup</h2>
+            <p class="rt-calc__step-sub">
+              Body, desk and daily-habit signals that feed the scoring model.
+            </p>
+          </div>
+        </header>
+
+        <!-- Module mount point: inputs form lands here. -->
+        <div class="rt-calc__slot" id="rt-slot-inputs" data-empty="true">
+          <span class="rt-calc__slot-hint">Input module mounts here</span>
+        </div>
+      </section>
+
+      <!-- Step 2: Budget Preview -->
+      <section
+        class="rt-calc__step"
+        id="rt-step-2"
+        data-step="2"
+        aria-labelledby="rt-step-2-title"
+      >
+        <header class="rt-calc__step-head">
+          <span class="rt-calc__step-index" aria-hidden="true">02</span>
+          <div class="rt-calc__step-meta">
+            <p class="rt-calc__step-eyebrow">Step 2</p>
+            <h2 class="rt-calc__step-title" id="rt-step-2-title">Budget preview</h2>
+            <p class="rt-calc__step-sub">
+              Estimated spend across priority tiers before anything is committed.
+            </p>
+          </div>
+        </header>
+
+        <!-- Module mount point: budget breakdown lands here. -->
+        <div class="rt-calc__slot" id="rt-slot-budget" data-empty="true">
+          <span class="rt-calc__slot-hint">Budget module mounts here</span>
+        </div>
+      </section>
+
+      <!-- Step 3: Results / AEO answer box -->
+      <section
+        class="rt-calc__step"
+        id="rt-step-3"
+        data-step="3"
+        aria-labelledby="rt-step-3-title"
+      >
+        <header class="rt-calc__step-head">
+          <span class="rt-calc__step-index" aria-hidden="true">03</span>
+          <div class="rt-calc__step-meta">
+            <p class="rt-calc__step-eyebrow">Step 3</p>
+            <h2 class="rt-calc__step-title" id="rt-step-3-title">Your result</h2>
+            <p class="rt-calc__step-sub">
+              A single, quotable answer plus the full upgrade plan.
+            </p>
+          </div>
+        </header>
+
+        <!-- Module mount point: score + AEO answer box lands here. -->
+        <div
+          class="rt-calc__slot"
+          id="rt-slot-results"
+          data-empty="true"
+          aria-live="polite"
+        >
+          <span class="rt-calc__slot-hint">Results &amp; answer box mount here</span>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ---------- Footnote ---------- -->
+    <footer class="rt-calc__footer">
+      <span>Phase 1 — structure only. No calculations wired yet.</span>
+      <span>Namespaced under <code>.rt-calc</code></span>
+    </footer>
+
+  </div>
+</body>
+</html>
