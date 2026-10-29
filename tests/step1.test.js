@@ -225,8 +225,8 @@ const ok = (cond, label, extra = '') => {
   ok(!/innerHTML/.test(code), 'no innerHTML (no theme/CSP surprises)');
   ok(!/jQuery|\$\(/.test(code), 'no jQuery dependency');
   ok(!/\b(eval|Function\()/.test(code), 'no eval');
-  ok(!/aeo|answer box|affiliate|amazon/i.test(code),
-     'no AEO copy or affiliate logic in the engine yet (Step 3 scope)');
+  ok(!/api[_-]?key|secret|password|access[_-]?token/i.test(code),
+     'no credentials or secrets baked into the client bundle');
 
   console.log('\n14. Multi-currency fill formula');
   const fillCheck = (v, min, max) => Math.round((v - min) / (max - min) * 1000) / 10;

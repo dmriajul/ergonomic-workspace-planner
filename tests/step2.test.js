@@ -319,8 +319,8 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
   console.log('\n10. Scope discipline');
   const src = fs.readFileSync(ROOT + 'assets/js/rt-calc.js', 'utf8');
   const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  ok(!/\baeo\b|answer box|affiliate|amazon|product link/i.test(code),
-     'no AEO copy / affiliate logic yet (Step 3 scope)');
+  ok(!/api[_-]?key|secret|password|access[_-]?token/i.test(code),
+     'no credentials or secrets baked into the client bundle');
   ok(!/document\.(body|head)|innerHTML/.test(code), 'engine never touches body/head/innerHTML');
   ok(/function calculateAllocation/.test(code) && /function calculateCPCH/.test(code) &&
      /function calculatePostureRisk/.test(code), 'core functions present');
@@ -331,7 +331,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
     const body = code.slice(start, start + 1400);
     return !/document\.|querySelector|\.style\./.test(body);
   }), 'core functions are DOM-free (pure)');
-  ok(RT.version === '0.5.0', 'version bumped to 0.5.0', RT.version);
+  ok(RT.version === '0.6.0', 'version bumped to 0.6.0', RT.version);
   ok(RT.debug === true, 'debug flag is opt-in and readable', RT.debug);
 
   console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
