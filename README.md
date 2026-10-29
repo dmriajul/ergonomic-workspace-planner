@@ -4,14 +4,19 @@ A modular, namespaced calculator widget for WordPress. Everything renders inside
 `.rt-calc`, so it drops into any theme without inheriting or leaking styles.
 
 **Phase 1:** structure only — HTML skeleton + design tokens.
-**Phase 2 (current):** Step 1 UI — budget, ergonomic profile, pain points.
-No calculation logic yet.
+**Phase 2:** Step 1 UI — budget, ergonomic profile, pain points.
+**Phase 3 (current):** Step 1 JavaScript — state, sync, pain exclusivity, height maths.
+Step 2 / Step 3 logic (allocation, AEO copy) is deliberately absent.
 
 ## Structure
 
 ```
 .
 ├── index.html                  # Static preview of the exact markup the plugin renders
+├── assets/js/
+│   └── rt-calc.js              # Step 1 controller (vanilla, no deps)
+├── tests/
+│   └── step1.test.js           # jsdom behavioural suite (98 assertions)
 ├── assets/css/
 │   ├── rt-tokens.css           # Layer 0 — design tokens, scoped to .rt-calc
 │   ├── rt-calc.css             # Layer 1 — scoped reset, shell, step skeleton
@@ -66,14 +71,15 @@ Four `<label class="rt-pain-card">` options, each wrapping a real
 Selected state is pure CSS: `:checked` drives the tick and icon tint, `:has()` adds
 the card glow, with `:checked ~` sibling rules as the non-`:has()` fallback.
 
-### The only JS contract so far
-The controller writes one custom property to paint the slider fill:
+### Slider paint hook
+The controller writes one custom property to paint the track fill:
 
 ```js
-range.style.setProperty("--rt-range-fill", `${pct}%`); // (value - 200) / 4800 * 100
+range.style.setProperty("--rt-range-fill", pct + "%"); // (value - min) / (max - min) * 100
 ```
 
-It defaults to `16.7%` (value 1000) so the static markup already looks correct.
+It defaults to `16.7%` (value 1000, USD) so the static markup already looks right
+before the script runs.
 
 ### Responsive behaviour
 | Width | Budget control | Dropdowns | Pain cards |
@@ -83,6 +89,105 @@ It defaults to `16.7%` (value 1000) so the static markup already looks correct.
 | `≥ 44rem` | Slider + number box side by side | 3 columns | 2 × 2 grid |
 
 Touch targets get extra vertical padding under `@media (pointer: coarse)`.
+
+## Step 1 JavaScript — `assets/js/rt-calc.js`
+
+A single IIFE. No dependencies, no globals except the namespace, no `innerHTML`,
+no `eval`, and no Step 2/3 vocabulary in the source (asserted by the test suite).
+
+### State
+
+```js
+window.RT_Calculator.getState()
+// { budget: 1000, currency: "USD", height: null, hours: null, work: null, pains: [] }
+```
+
+`getState()` returns a **defensive copy** — mutating it cannot corrupt the widget.
+
+| Key | Type | Notes |
+| --- | --- | --- |
+| `budget` | number | Always inside the active currency window, snapped to step |
+| `currency` | string | `"USD"` \| `"GBP"` \| `"CAD"` |
+| `height` | number \| null | **Inches**, because every ergonomic ratio needs inches |
+| `hours` | string \| null | Option value: `lt4` \| `4to6` \| `6to8` \| `8plus` |
+| `work` | string \| null | Option value: `software-dev` \| `video-editing` \| `design` \| `general-office` |
+| `pains` | string[] | Checked pain values, e.g. `["neck-shoulder"]` |
+
+The three profile fields start as `null`, and the markup now starts on a disabled
+`Select …` placeholder so the UI cannot show a value the state does not hold.
+
+### Currency windows
+
+| Code | Range | Step | Locale |
+| --- | --- | --- | --- |
+| USD | 200 – 5,000 | 50 | `en-US` |
+| GBP | 150 – 4,000 | 50 | `en-GB` |
+| CAD | 250 – 6,500 | 50 | `en-CA` |
+
+Switching currency re-windows the slider **and** the number input, relabels the
+scale endpoints, repaints the glyph via `data-currency`, and re-clamps the amount
+(5,000 USD → 4,000 GBP). It does **not** convert the value — inventing exchange
+rates is Step 2's problem.
+
+### Budget sync
+
+- Slider `input` → number input, `<output>`, `--rt-range-fill`, `aria-valuetext`.
+- Number `input` → slider live, but **only once the typed value is in range**, so
+  typing `1` on the way to `1500` never slams the budget to the minimum.
+- `change` / `blur` / `Enter` → normalise: clamp, snap to step, rewrite the field.
+
+### Pain exclusivity
+
+Driven by `data-exclusive-group` in the markup, not a hardcoded name: checking the
+preventive card clears all symptoms, and checking any symptom clears it.
+Unchecking never cascades.
+
+### Height maths (pure functions)
+
+```js
+RT_Calculator.calculateErgonomicHeights(68);
+// { seatedHeightInches: 27.88, standingHeightInches: 42.84,
+//   seatedHeightCm: 70.8, standingHeightCm: 108.8 }
+```
+
+`stature × 0.41` (seated elbow height) and `stature × 0.63` (standing elbow height).
+Returns `null` for invalid input rather than throwing.
+
+`RT_Calculator.parseHeightToInches(source)` accepts an `<option>`, a label string
+(`5'8" (173 cm)`, `173 cm`, `6 ft 0`) or a number, and **prefers feet/inches when
+both units appear** — `5'8"` is exactly 68 in, while the label's `173 cm` is a
+rounded display of 172.72 cm. Results are `console.log`ged on change until Step 3
+renders them.
+
+### Events (integration points for Steps 2–3)
+
+Dispatched on the `.rt-calc` root, bubbling:
+
+| Event | Detail |
+| --- | --- |
+| `rt:budgetchange` | `{ budget, currency }` |
+| `rt:currencychange` | `{ currency, budget }` |
+| `rt:painschange` | `{ pains }` |
+| `rt:profilechange` | `{ field, value, state }` |
+| `rt:heightchange` | `{ inches, metrics }` |
+
+```js
+document.addEventListener("rt:heightchange", e => console.log(e.detail.metrics));
+```
+
+`RT_Calculator.init()` is idempotent and safe to call after AJAX-injected markup
+(a WordPress reality) — it is a no-op once `[data-rt-ready]` is set.
+
+### Tests
+
+```bash
+npm i --no-save jsdom csstree-validator
+node tests/step1.test.js
+```
+
+98 assertions: state defaults, slider↔input sync, mid-typing guard, snapping,
+all three currency windows, pain exclusivity, height maths and parsing, event
+emission, idempotency, and scope discipline (no Step 2/3 logic, no stray globals).
 
 ## Design tokens
 
@@ -123,6 +228,7 @@ python3 -m http.server 8000
 ## Next phases
 
 - Phase 2 — Step 1 input UI. ✅
-- Phase 3 — calculation model, slider/input sync, pain-card exclusivity, budget tiering.
-- Phase 4 — results panel and AEO answer block.
-- Phase 5 — WordPress shortcode / block wrapper and asset enqueueing.
+- Phase 3 — Step 1 JS: state, sync, exclusivity, height maths. ✅
+- Phase 4 — Step 2 budget allocation model (consumes `rt:budgetchange`).
+- Phase 5 — results panel and AEO answer block (consumes `rt:heightchange`).
+- Phase 6 — WordPress shortcode / block wrapper, `wp_enqueue_script` with `defer`.
