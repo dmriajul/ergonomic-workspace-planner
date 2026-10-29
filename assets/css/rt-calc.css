@@ -1,0 +1,1014 @@
+/* ==========================================================================
+   rt-calc.css
+   Smart Ergonomic Calculator — scoped base + skeleton (layer 1)
+   --------------------------------------------------------------------------
+   Rules of engagement:
+   1. Nothing outside `.rt-calc` is styled. No body/html resets, no h1-h6 base.
+   2. All class names are prefixed with `rt-` so theme CSS cannot collide.
+   3. This file is presentation only — no JavaScript, no component modules.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Scoped reset
+   -------------------------------------------------------------------------- */
+.rt-calc,
+.rt-calc *,
+.rt-calc *::before,
+.rt-calc *::after {
+  box-sizing: border-box;
+}
+
+.rt-calc {
+  margin: 0;
+  padding: 0;
+}
+
+.rt-calc :where(p, h1, h2, h3, h4, figure, ol, ul, dl, dd) {
+  margin: 0;
+  padding: 0;
+}
+
+.rt-calc :where(ol, ul) {
+  list-style: none;
+}
+
+.rt-calc :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+.rt-calc :where(svg) {
+  display: block;
+  max-width: 100%;
+}
+
+.rt-calc :where(a) {
+  color: var(--rt-signal);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+/* --------------------------------------------------------------------------
+   2. Root shell
+   -------------------------------------------------------------------------- */
+.rt-calc {
+  /* Gives the block its own stacking + containing context inside any theme. */
+  position: relative;
+  isolation: isolate;
+  display: block;
+
+  width: 100%;
+  max-width: var(--rt-max-width);
+  margin-inline: auto;
+  padding: clamp(1.25rem, 4vw, 2.5rem) var(--rt-gutter);
+
+  font-family: var(--rt-font-sans);
+  font-size: var(--rt-text-base);
+  font-weight: var(--rt-weight-regular);
+  line-height: var(--rt-leading-relaxed);
+  color: var(--rt-text);
+  letter-spacing: 0;
+
+  background-color: var(--rt-bg);
+  /* Faint aurora so the flat navy never reads as a dead panel. */
+  background-image:
+    radial-gradient(
+      60rem 30rem at 12% -10%,
+      rgba(99, 102, 241, 0.16),
+      transparent 60%
+    ),
+    radial-gradient(
+      45rem 26rem at 105% 8%,
+      rgba(45, 212, 191, 0.1),
+      transparent 62%
+    );
+  border-radius: var(--rt-radius-xl);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings inherit the display face; size is set per component. */
+.rt-calc :where(h1, h2, h3) {
+  font-family: var(--rt-font-display);
+  font-weight: var(--rt-weight-semibold);
+  line-height: var(--rt-leading-tight);
+  letter-spacing: var(--rt-tracking-tight);
+  color: var(--rt-text);
+}
+
+/* --------------------------------------------------------------------------
+   3. Masthead
+   -------------------------------------------------------------------------- */
+.rt-calc__header {
+  display: grid;
+  gap: var(--rt-space-3);
+  padding-bottom: var(--rt-space-6);
+  border-bottom: var(--rt-border-width) solid var(--rt-border);
+}
+
+.rt-calc__badge {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rt-space-2);
+  padding: var(--rt-space-1) var(--rt-space-3);
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wide);
+  text-transform: uppercase;
+  color: var(--rt-signal);
+  background-color: var(--rt-signal-soft);
+  border: var(--rt-border-width) solid rgba(45, 212, 191, 0.24);
+  border-radius: var(--rt-radius-pill);
+}
+
+.rt-calc__badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.18);
+}
+
+.rt-calc__title {
+  font-size: var(--rt-text-2xl);
+  max-width: 24ch;
+}
+
+.rt-calc__lede {
+  max-width: 58ch;
+  font-size: var(--rt-text-md);
+  color: var(--rt-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   4. Static step rail (no JS — purely a progress landmark)
+   -------------------------------------------------------------------------- */
+.rt-calc__rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rt-space-2) var(--rt-space-4);
+  padding-block: var(--rt-space-5);
+  font-size: var(--rt-text-sm);
+  color: var(--rt-text-dim);
+}
+
+.rt-calc__rail-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rt-space-2);
+}
+
+.rt-calc__rail-num {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-xs);
+  color: var(--rt-text-muted);
+  background-color: var(--rt-surface-sunken);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: 50%;
+}
+
+.rt-calc__rail-item:first-child .rt-calc__rail-num {
+  color: var(--rt-text);
+  background-color: var(--rt-accent-soft);
+  border-color: rgba(99, 102, 241, 0.42);
+}
+
+.rt-calc__rail-sep {
+  flex: 1 1 1.5rem;
+  min-width: 1.5rem;
+  height: 1px;
+  background-image: var(--rt-grad-hairline);
+}
+
+/* --------------------------------------------------------------------------
+   5. Step containers
+   -------------------------------------------------------------------------- */
+.rt-calc__steps {
+  display: grid;
+  gap: var(--rt-space-5);
+}
+
+.rt-calc__step {
+  position: relative;
+  display: grid;
+  gap: var(--rt-space-5);
+  padding: var(--rt-section-pad);
+
+  background-color: var(--rt-surface);
+  background-image: var(--rt-grad-surface);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-lg);
+  box-shadow: var(--rt-shadow-md);
+}
+
+/* Hairline highlight along the top edge of each card. */
+.rt-calc__step::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background-image: var(--rt-grad-hairline);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.rt-calc__step-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--rt-space-3);
+}
+
+.rt-calc__step-index {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding-inline: var(--rt-space-2);
+
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wide);
+  color: var(--rt-text);
+
+  background-image: var(--rt-grad-surface);
+  background-color: var(--rt-surface-raised);
+  border: var(--rt-border-width) solid var(--rt-border-strong);
+  border-radius: var(--rt-radius-sm);
+}
+
+.rt-calc__step-meta {
+  display: grid;
+  gap: var(--rt-space-1);
+  min-width: 0;
+}
+
+.rt-calc__step-eyebrow {
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wider);
+  text-transform: uppercase;
+  color: var(--rt-text-dim);
+}
+
+.rt-calc__step-title {
+  font-size: var(--rt-text-xl);
+}
+
+.rt-calc__step-sub {
+  font-size: var(--rt-text-base);
+  color: var(--rt-text-muted);
+  max-width: 52ch;
+}
+
+/* --------------------------------------------------------------------------
+   6. Mount points — intentionally empty until their modules land
+   -------------------------------------------------------------------------- */
+.rt-calc__slot {
+  display: grid;
+  place-items: center;
+  min-height: 7.5rem;
+  padding: var(--rt-space-4);
+
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-xs);
+  letter-spacing: 0.04em;
+  color: var(--rt-text-dim);
+  text-align: center;
+
+  background-color: var(--rt-surface-sunken);
+  border: 1px dashed var(--rt-border-strong);
+  border-radius: var(--rt-radius-md);
+}
+
+/* Empty slots show their hint; populated slots drop straight into the layout. */
+.rt-calc__slot:not([data-empty="true"]) {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.rt-calc__slot[data-empty="true"] > :not(.rt-calc__slot-hint) {
+  display: none;
+}
+
+.rt-calc__slot-hint {
+  max-width: 34ch;
+  line-height: var(--rt-leading-snug);
+}
+
+/* --------------------------------------------------------------------------
+   7. Footnote
+   -------------------------------------------------------------------------- */
+.rt-calc__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rt-space-2) var(--rt-space-4);
+  justify-content: space-between;
+  margin-top: var(--rt-space-6);
+  padding-top: var(--rt-space-4);
+  font-size: var(--rt-text-xs);
+  color: var(--rt-text-dim);
+  border-top: var(--rt-border-width) solid var(--rt-border);
+}
+
+/* --------------------------------------------------------------------------
+   8. States & preferences
+   -------------------------------------------------------------------------- */
+.rt-calc :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--rt-signal);
+  outline-offset: 2px;
+  border-radius: var(--rt-radius-xs);
+}
+
+/* Screen-reader utility, scoped to the plugin. */
+.rt-calc__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rt-calc *,
+  .rt-calc *::before,
+  .rt-calc *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   9. STEP 1 — ERGONOMIC PROFILING
+   --------------------------------------------------------------------------
+   Module styles for #rt-slot-inputs. Still presentation-only: nothing here
+   depends on JS. Selection states are driven by :checked where CSS alone can
+   express them; the slider track fill uses --rt-range-fill (defaulted below)
+   so the controller only has to write one custom property later.
+   ========================================================================== */
+
+.rt-inputs {
+  display: grid;
+  gap: var(--rt-space-5);
+}
+
+/* --------------------------------------------------------------------------
+   9.1 Fieldsets — sections inside the Step 1 card
+   -------------------------------------------------------------------------- */
+.rt-fieldset {
+  display: grid;
+  gap: var(--rt-space-4);
+  min-width: 0; /* stops fieldsets from refusing to shrink in grid/flex */
+  margin: 0;
+  padding: var(--rt-space-5);
+  padding-top: var(--rt-space-4);
+
+  background-color: var(--rt-surface-sunken);
+  /* Inset ring instead of a real border: a legend would otherwise notch a
+     border, and this keeps the panel edge pixel-identical in every engine. */
+  box-shadow: inset 0 0 0 var(--rt-border-width) var(--rt-border);
+  border-radius: var(--rt-radius-md);
+}
+
+.rt-fieldset__legend {
+  /* Floated out of the border so it reads as a section label, not a notch. */
+  float: left;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--rt-font-display);
+  font-size: var(--rt-text-lg);
+  font-weight: var(--rt-weight-semibold);
+  line-height: var(--rt-leading-tight);
+  letter-spacing: var(--rt-tracking-tight);
+  color: var(--rt-text);
+}
+
+.rt-fieldset__legend + * {
+  clear: both;
+}
+
+.rt-fieldset__hint {
+  margin-top: calc(var(--rt-space-1) * -1);
+  font-size: var(--rt-text-sm);
+  line-height: var(--rt-leading-snug);
+  color: var(--rt-text-muted);
+  max-width: 56ch;
+}
+
+/* --------------------------------------------------------------------------
+   9.2 Budget head — big amount + currency toggle
+   -------------------------------------------------------------------------- */
+.rt-budget__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--rt-space-4);
+}
+
+.rt-budget__amount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.08em;
+  font-family: var(--rt-font-display);
+  font-size: clamp(2.5rem, 8vw, 3.75rem);
+  font-weight: var(--rt-weight-bold);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--rt-text);
+}
+
+.rt-budget__value {
+  /* Tabular + fixed min-width keeps the digits from jittering on change. */
+  min-width: 5ch;
+  text-align: right;
+}
+
+/* Currency glyphs: exactly one is visible, chosen by :has() on the radios.
+   Fallback (no :has()) simply shows all three glyphs — layout still holds. */
+.rt-cur {
+  font-size: 0.52em;
+  font-weight: var(--rt-weight-semibold);
+  color: var(--rt-text-muted);
+}
+
+.rt-cur--gbp,
+.rt-cur--cad {
+  display: none;
+}
+
+.rt-calc:has(#rt-cur-gbp:checked) .rt-cur--usd,
+.rt-calc:has(#rt-cur-cad:checked) .rt-cur--usd,
+.rt-calc:has(#rt-cur-gbp:checked) .rt-cur--cad,
+.rt-calc:has(#rt-cur-cad:checked) .rt-cur--gbp {
+  display: none;
+}
+
+.rt-calc:has(#rt-cur-gbp:checked) .rt-cur--gbp,
+.rt-calc:has(#rt-cur-cad:checked) .rt-cur--cad {
+  display: inline;
+}
+
+/* --------------------------------------------------------------------------
+   9.3 Segmented control — currency
+   -------------------------------------------------------------------------- */
+.rt-seg {
+  display: inline-flex;
+  gap: var(--rt-space-1);
+  padding: var(--rt-space-1);
+  background-color: var(--rt-bg);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-pill);
+  box-shadow: var(--rt-shadow-sm);
+}
+
+.rt-seg__opt {
+  display: flex;
+  cursor: pointer;
+}
+
+.rt-seg__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: var(--rt-space-2) var(--rt-space-3);
+  font-size: var(--rt-text-sm);
+  font-weight: var(--rt-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--rt-text-muted);
+  border-radius: var(--rt-radius-pill);
+  transition: color var(--rt-dur-fast) var(--rt-ease),
+    background-color var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-seg__label > span {
+  font-size: 1.05em;
+  color: var(--rt-text-dim);
+  transition: color var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-seg__opt:hover .rt-seg__label {
+  color: var(--rt-text);
+  background-color: rgba(148, 163, 184, 0.08);
+}
+
+.rt-seg__input:checked + .rt-seg__label {
+  color: #fff;
+  background-color: var(--rt-accent);
+  background-image: var(--rt-grad-accent);
+  box-shadow: 0 6px 18px -10px rgba(99, 102, 241, 0.9);
+}
+
+.rt-seg__input:checked + .rt-seg__label > span {
+  color: #fff;
+}
+
+.rt-seg__input:focus-visible + .rt-seg__label {
+  outline: 2px solid var(--rt-signal);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   9.4 Budget control — slider + synced number input
+   -------------------------------------------------------------------------- */
+.rt-budget__control {
+  display: grid;
+  gap: var(--rt-space-4);
+  align-items: center;
+}
+
+.rt-range-wrap {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Base field chrome, shared by the number input. */
+.rt-input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--rt-space-2) var(--rt-space-3);
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-md);
+  font-weight: var(--rt-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--rt-text);
+  text-align: right;
+  background-color: var(--rt-bg);
+  border: var(--rt-border-width) solid var(--rt-border-strong);
+  border-radius: var(--rt-radius-sm);
+  transition: border-color var(--rt-dur-fast) var(--rt-ease),
+    box-shadow var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-input:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.rt-input:focus {
+  outline: none;
+  border-color: var(--rt-accent);
+  box-shadow: 0 0 0 3px var(--rt-accent-soft);
+}
+
+/* Kill the spinner: value is stepped by the slider and keyboard arrows. */
+.rt-input::-webkit-outer-spin-button,
+.rt-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.rt-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.rt-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 8.5rem;
+}
+
+.rt-input-group__prefix {
+  position: absolute;
+  left: var(--rt-space-3);
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-sm);
+  color: var(--rt-text-muted);
+  pointer-events: none;
+}
+
+.rt-input-group .rt-input {
+  padding-left: 2.6rem;
+}
+
+.rt-input-group__prefix .rt-cur {
+  font-size: 1em;
+  color: var(--rt-text-muted);
+}
+
+/* Custom range — track, fill and thumb. */
+.rt-range {
+  --rt-range-fill: 16.7%; /* default: (1000 - 200) / (5000 - 200) */
+  width: 100%;
+  height: 1.75rem;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.rt-range::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border-radius: var(--rt-radius-pill);
+  background-color: var(--rt-bg);
+  background-image: linear-gradient(
+      90deg,
+      var(--rt-accent) 0%,
+      var(--rt-signal) 100%
+    ),
+    linear-gradient(var(--rt-bg), var(--rt-bg));
+  background-repeat: no-repeat;
+  background-size: var(--rt-range-fill) 100%, 100% 100%;
+  box-shadow: inset 0 0 0 1px var(--rt-border),
+    inset 0 1px 2px rgba(2, 6, 23, 0.7);
+}
+
+.rt-range::-moz-range-track {
+  height: 0.5rem;
+  border-radius: var(--rt-radius-pill);
+  background-color: var(--rt-bg);
+  box-shadow: inset 0 0 0 1px var(--rt-border),
+    inset 0 1px 2px rgba(2, 6, 23, 0.7);
+}
+
+.rt-range::-moz-range-progress {
+  height: 0.5rem;
+  border-radius: var(--rt-radius-pill);
+  background-image: var(--rt-grad-accent);
+}
+
+.rt-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  margin-top: -0.4375rem; /* (track 8px - thumb 22px) / 2 */
+  border-radius: 50%;
+  background-color: #fff;
+  border: 3px solid var(--rt-accent);
+  box-shadow: 0 2px 10px -2px rgba(2, 6, 23, 0.9),
+    0 0 0 0 rgba(99, 102, 241, 0.35);
+  transition: box-shadow var(--rt-dur-fast) var(--rt-ease),
+    transform var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-range::-moz-range-thumb {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 3px solid var(--rt-accent);
+  box-shadow: 0 2px 10px -2px rgba(2, 6, 23, 0.9);
+  transition: box-shadow var(--rt-dur-fast) var(--rt-ease),
+    transform var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-range:hover::-webkit-slider-thumb {
+  box-shadow: 0 2px 10px -2px rgba(2, 6, 23, 0.9),
+    0 0 0 6px rgba(99, 102, 241, 0.16);
+}
+
+.rt-range:hover::-moz-range-thumb {
+  box-shadow: 0 2px 10px -2px rgba(2, 6, 23, 0.9),
+    0 0 0 6px rgba(99, 102, 241, 0.16);
+}
+
+.rt-range:focus-visible {
+  /* The thumb carries the ring; a boxy outline around the whole strip reads
+     as a bug on a full-bleed slider. */
+  outline: none;
+}
+
+.rt-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--rt-signal);
+  outline-offset: 3px;
+}
+
+.rt-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--rt-signal);
+  outline-offset: 3px;
+}
+
+.rt-budget__scale {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--rt-space-3);
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-xs);
+  letter-spacing: 0.04em;
+  color: var(--rt-text-dim);
+}
+
+.rt-budget__scale-mid {
+  color: var(--rt-text-dim);
+  opacity: 0.75;
+}
+
+/* --------------------------------------------------------------------------
+   9.5 Field grid — dropdowns
+   -------------------------------------------------------------------------- */
+.rt-field-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--rt-space-4);
+}
+
+.rt-field {
+  display: grid;
+  gap: var(--rt-space-2);
+  min-width: 0;
+}
+
+.rt-field__label {
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wide);
+  text-transform: uppercase;
+  color: var(--rt-text-muted);
+}
+
+.rt-field__hint {
+  font-size: var(--rt-text-xs);
+  line-height: var(--rt-leading-snug);
+  color: var(--rt-text-dim);
+}
+
+.rt-select-wrap {
+  position: relative;
+  display: block;
+}
+
+.rt-select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--rt-space-2) 2.5rem var(--rt-space-2) var(--rt-space-3);
+  font-family: var(--rt-font-sans);
+  font-size: var(--rt-text-base);
+  font-variant-numeric: tabular-nums;
+  color: var(--rt-text);
+  background-color: var(--rt-bg);
+  border: var(--rt-border-width) solid var(--rt-border-strong);
+  border-radius: var(--rt-radius-sm);
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color var(--rt-dur-fast) var(--rt-ease),
+    box-shadow var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-select:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.rt-select:focus {
+  outline: none;
+  border-color: var(--rt-accent);
+  box-shadow: 0 0 0 3px var(--rt-accent-soft);
+}
+
+/* Native dropdown list stays legible in dark mode on Chrome/Edge. */
+.rt-select option {
+  color: var(--rt-text);
+  background-color: var(--rt-surface);
+}
+
+.rt-select__chevron {
+  position: absolute;
+  top: 50%;
+  right: var(--rt-space-3);
+  width: 1rem;
+  height: 1rem;
+  transform: translateY(-50%);
+  color: var(--rt-text-muted);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   9.6 Pain-point cards
+   -------------------------------------------------------------------------- */
+.rt-pain-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--rt-space-3);
+}
+
+.rt-pain-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--rt-space-3);
+  padding: var(--rt-space-3) var(--rt-space-4);
+  cursor: pointer;
+
+  background-color: var(--rt-surface);
+  background-image: var(--rt-grad-surface);
+  border: var(--rt-border-width) solid var(--rt-border-strong);
+  border-radius: var(--rt-radius-md);
+  transition: border-color var(--rt-dur-fast) var(--rt-ease),
+    background-color var(--rt-dur-fast) var(--rt-ease),
+    box-shadow var(--rt-dur-fast) var(--rt-ease),
+    transform var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-pain-card:hover {
+  border-color: rgba(148, 163, 184, 0.42);
+  transform: translateY(-1px);
+}
+
+.rt-pain-card__icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--rt-text-muted);
+  background-color: var(--rt-bg);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-sm);
+  transition: color var(--rt-dur-fast) var(--rt-ease),
+    background-color var(--rt-dur-fast) var(--rt-ease),
+    border-color var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-pain-card__icon svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.rt-pain-card__label {
+  font-size: var(--rt-text-base);
+  font-weight: var(--rt-weight-medium);
+  line-height: var(--rt-leading-snug);
+  color: var(--rt-text);
+}
+
+.rt-pain-card__label em {
+  font-style: normal;
+  font-size: var(--rt-text-sm);
+  font-weight: var(--rt-weight-regular);
+  color: var(--rt-text-muted);
+}
+
+/* Check indicator — a ring that fills and pops a tick when checked. */
+.rt-pain-card__check {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 1.5px solid var(--rt-border-strong);
+  border-radius: 50%;
+  transition: background-color var(--rt-dur-fast) var(--rt-ease),
+    border-color var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-pain-card__check::after {
+  content: "";
+  width: 0.55rem;
+  height: 0.3rem;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) scale(0.5) translateY(-1px);
+  opacity: 0;
+  transition: opacity var(--rt-dur-fast) var(--rt-ease),
+    transform var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-pain-card__input:checked ~ .rt-pain-card__check {
+  background-image: var(--rt-grad-accent);
+  border-color: transparent;
+}
+
+.rt-pain-card__input:checked ~ .rt-pain-card__check::after {
+  opacity: 1;
+  transform: rotate(-45deg) scale(1) translateY(-1px);
+}
+
+/* Selected card treatment */
+.rt-pain-card:has(.rt-pain-card__input:checked) {
+  border-color: rgba(99, 102, 241, 0.55);
+  background-color: var(--rt-surface-raised);
+  box-shadow: var(--rt-glow-accent);
+}
+
+.rt-pain-card:has(.rt-pain-card__input:checked) .rt-pain-card__icon {
+  color: var(--rt-signal);
+  background-color: var(--rt-accent-soft);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Fallback for engines without :has() */
+.rt-pain-card__input:checked ~ .rt-pain-card__icon {
+  color: var(--rt-signal);
+  background-color: var(--rt-accent-soft);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Preventive option reads as the calm choice, not as a fourth symptom. */
+.rt-pain-card--preventive:has(.rt-pain-card__input:checked) {
+  border-color: rgba(45, 212, 191, 0.5);
+  box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.28),
+    0 18px 44px -22px rgba(45, 212, 191, 0.5);
+}
+
+.rt-pain-card--preventive:has(.rt-pain-card__input:checked)
+  .rt-pain-card__icon {
+  color: var(--rt-signal);
+  background-color: var(--rt-signal-soft);
+  border-color: rgba(45, 212, 191, 0.36);
+}
+
+.rt-pain-card--preventive
+  .rt-pain-card__input:checked
+  ~ .rt-pain-card__check {
+  background-image: linear-gradient(135deg, #2dd4bf 0%, #22b8a3 100%);
+}
+
+/* Keyboard focus ring on the card itself (the input is visually hidden). */
+.rt-pain-card:has(.rt-pain-card__input:focus-visible) {
+  outline: 2px solid var(--rt-signal);
+  outline-offset: 2px;
+}
+
+/* Engines without :has() get a focus-within ring so focus is never invisible. */
+@supports not selector(:has(*)) {
+  .rt-pain-card:focus-within {
+    outline: 2px solid var(--rt-signal);
+    outline-offset: 2px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   9.7 Step 1 responsive behaviour
+   -------------------------------------------------------------------------- */
+@media (min-width: 30rem) {
+  .rt-budget__control {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (min-width: 30rem) {
+  /* Four options -> a balanced 2x2 block; three columns would orphan one. */
+  .rt-pain-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 44rem) {
+  .rt-field-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 26rem) {
+  .rt-seg {
+    width: 100%;
+  }
+
+  .rt-seg__opt {
+    flex: 1;
+  }
+
+  .rt-seg__label {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .rt-budget__head {
+    gap: var(--rt-space-3);
+  }
+
+  .rt-input-group {
+    width: 100%;
+  }
+}
+
+/* Touch targets: the icon-only parts of the cards are never the only hit area,
+   but bump padding on coarse pointers for comfortable tapping. */
+@media (pointer: coarse) {
+  .rt-pain-card {
+    padding-block: var(--rt-space-4);
+  }
+
+  .rt-seg__label {
+    padding-block: var(--rt-space-3);
+  }
+}

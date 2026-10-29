@@ -1,0 +1,117 @@
+/* ==========================================================================
+   rt-tokens.css
+   Smart Ergonomic Calculator — design tokens (layer 0)
+   --------------------------------------------------------------------------
+   Every token is declared on the namespaced root (.rt-calc) instead of :root,
+   so the plugin never leaks variables into, or inherits them from, a theme.
+   No component styles live in this file.
+   ========================================================================== */
+
+.rt-calc {
+  color-scheme: dark;
+
+  /* ---- Surfaces ---------------------------------------------------------- */
+  --rt-bg: #0f172a;
+  --rt-surface: #1e293b;
+  --rt-surface-raised: #243248;
+  --rt-surface-sunken: #0b1220;
+  --rt-border: rgba(148, 163, 184, 0.14);
+  --rt-border-strong: rgba(148, 163, 184, 0.28);
+
+  /* ---- Text -------------------------------------------------------------- */
+  --rt-text: #e8eef9;
+  --rt-text-muted: #94a3b8;
+  --rt-text-dim: #64748b;
+
+  /* ---- Accents ----------------------------------------------------------- */
+  --rt-accent: #6366f1;
+  --rt-accent-strong: #4f46e5;
+  --rt-accent-soft: rgba(99, 102, 241, 0.14);
+  --rt-signal: #2dd4bf;
+  --rt-signal-soft: rgba(45, 212, 191, 0.12);
+  --rt-warn: #f59e0b;
+  --rt-danger: #f87171;
+
+  /* ---- Gradients & glows ------------------------------------------------- */
+  --rt-grad-surface: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.045),
+    rgba(255, 255, 255, 0) 46%
+  );
+  --rt-grad-accent: linear-gradient(135deg, #6366f1 0%, #2dd4bf 100%);
+  --rt-grad-hairline: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.35),
+    transparent
+  );
+
+  /* ---- Typography -------------------------------------------------------- */
+  --rt-font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --rt-font-display: "Sora", "Inter", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+  --rt-font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo,
+    Consolas, monospace;
+
+  --rt-text-xs: 0.75rem;
+  --rt-text-sm: 0.8125rem;
+  --rt-text-base: 0.9375rem;
+  --rt-text-md: 1rem;
+  --rt-text-lg: clamp(1.0625rem, 0.4vw + 0.95rem, 1.1875rem);
+  --rt-text-xl: clamp(1.25rem, 0.9vw + 1rem, 1.625rem);
+  --rt-text-2xl: clamp(1.5rem, 1.6vw + 1.1rem, 2.25rem);
+
+  --rt-leading-tight: 1.2;
+  --rt-leading-snug: 1.4;
+  --rt-leading-relaxed: 1.65;
+
+  --rt-weight-regular: 400;
+  --rt-weight-medium: 500;
+  --rt-weight-semibold: 600;
+  --rt-weight-bold: 700;
+
+  --rt-tracking-tight: -0.02em;
+  --rt-tracking-wide: 0.08em;
+  --rt-tracking-wider: 0.14em;
+
+  /* ---- Spacing scale (4pt) ----------------------------------------------- */
+  --rt-space-1: 0.25rem;
+  --rt-space-2: 0.5rem;
+  --rt-space-3: 0.75rem;
+  --rt-space-4: 1rem;
+  --rt-space-5: 1.25rem;
+  --rt-space-6: 1.5rem;
+  --rt-space-8: 2rem;
+  --rt-space-10: 2.5rem;
+  --rt-space-12: 3rem;
+  --rt-space-16: 4rem;
+
+  /* ---- Radii ------------------------------------------------------------- */
+  --rt-radius-xs: 6px;
+  --rt-radius-sm: 10px;
+  --rt-radius-md: 14px;
+  --rt-radius-lg: 20px;
+  --rt-radius-xl: 28px;
+  --rt-radius-pill: 999px;
+
+  /* ---- Elevation --------------------------------------------------------- */
+  --rt-shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.45);
+  --rt-shadow-md: 0 12px 28px -14px rgba(2, 6, 23, 0.75);
+  --rt-shadow-lg: 0 32px 64px -28px rgba(2, 6, 23, 0.9);
+  --rt-glow-accent: 0 0 0 1px rgba(99, 102, 241, 0.3),
+    0 18px 44px -20px rgba(99, 102, 241, 0.55);
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --rt-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --rt-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --rt-dur-fast: 140ms;
+  --rt-dur-base: 220ms;
+  --rt-dur-slow: 420ms;
+
+  /* ---- Layout ------------------------------------------------------------ */
+  --rt-max-width: 780px;
+  --rt-gutter: clamp(1rem, 3vw, 2rem);
+  --rt-section-pad: clamp(1.25rem, 3vw, 1.875rem);
+  --rt-border-width: 1px;
+}

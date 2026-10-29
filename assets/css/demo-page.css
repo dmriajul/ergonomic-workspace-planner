@@ -1,0 +1,21 @@
+/* ==========================================================================
+   demo-page.css
+   Preview harness ONLY — not part of the shipped plugin.
+   Centers the calculator on a dark canvas so the skeleton can be reviewed.
+   ========================================================================== */
+
+.rt-demo {
+  margin: 0;
+  min-height: 100vh;
+  padding: clamp(1rem, 4vw, 3rem);
+  background-color: #080d18;
+  background-image:
+    radial-gradient(70rem 40rem at 50% -12%, rgba(99, 102, 241, 0.12), transparent 65%),
+    linear-gradient(180deg, #080d18, #0b1220);
+}
+
+.rt-demo code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.95em;
+  color: #cbd5e1;
+}
