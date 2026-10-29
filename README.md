@@ -6,7 +6,8 @@ A modular, namespaced calculator widget for WordPress. Everything renders inside
 **Phase 1:** structure only — HTML skeleton + design tokens.
 **Phase 2:** Step 1 UI — budget, ergonomic profile, pain points.
 **Phase 3:** Step 1 JavaScript — state, sync, pain exclusivity, height maths.
-**Phase 4 (current):** Step 2 engine — Ergo Budget Ratio™, CPCH, Posture Risk.
+**Phase 4:** Step 2 engine — Ergo Budget Ratio™, CPCH, Posture Risk.
+**Phase 5 (current):** Step 2 UI — allocation bars + metric chips.
 AEO copy and affiliate logic remain deliberately absent.
 
 ## Structure
@@ -18,7 +19,8 @@ AEO copy and affiliate logic remain deliberately absent.
 │   └── rt-calc.js              # Step 1 controller (vanilla, no deps)
 ├── tests/
 │   ├── step1.test.js           # jsdom behavioural suite (98 assertions)
-│   └── step2.test.js           # engine suite + fuzz (99 assertions)
+│   ├── step2.test.js           # engine suite + fuzz (100 assertions)
+│   └── step2-ui.test.js        # rendered-UI suite (67 assertions)
 ├── assets/css/
 │   ├── rt-tokens.css           # Layer 0 — design tokens, scoped to .rt-calc
 │   ├── rt-calc.css             # Layer 1 — scoped reset, shell, step skeleton
@@ -244,6 +246,69 @@ never translate. `RT_Calculator.hoursProfile` is exposed for reference.
   and again on every Step 1 change (subscribed to the public events, so Step 1's
   handlers stay unaware of Step 2).
 
+## Step 2 UI — `#rt-slot-budget`
+
+Six allocation rows plus three metric chips. The markup ships with the baseline
+values (USD 1,000, 35/25/20/10/5/5) baked in, so the panel is correct before the
+script runs and stays readable if it fails to load.
+
+### Allocation rows
+
+| Category | Icon | Hue token |
+| --- | --- | --- |
+| Chair | 🪑 | `--rt-accent` |
+| Desk | 🖥️ | `--rt-info` |
+| Monitor | 📺 | `--rt-signal` |
+| Keyboard | ⌨️ | `--rt-violet` |
+| Lighting | 💡 | `--rt-warn` |
+| Cables | 🔌 | `--rt-text-muted` |
+
+Each row: icon, label, track, percentage, amount. Bars animate with
+`transition: width 0.4s ease` and are driven by a single custom property:
+
+```css
+.rt-alloc__bar { width: var(--rt-alloc, 0%); }
+```
+
+JS writes the *exact* ratio (`style.setProperty("--rt-alloc", "35.00%")`) so
+sub-1% differences stay visible, while the printed percentage is an integer.
+
+**Percentages are distributed with the largest-remainder method** so the six
+labels always total exactly 100% — rounding each ratio independently gives
+`34 + 26 + 20 + 10 + 5 + 5 = 100` today but produces 99 or 101 for neighbouring
+states, which reads as a bug. Amounts are rounded the same way (drift absorbed on
+the largest line), so the amount column always totals the budget exactly.
+
+### Metric chips
+
+| Chip | Content | Source |
+| --- | --- | --- |
+| Cost-Per-Comfort-Hour™ | `$0.08/hr` | `calculateCPCH` |
+| Posture risk | `🟢 Low` / `🟡 Moderate` / `🔴 High` | `calculatePostureRisk` |
+| Setup tier | `🌱 Starter` < 700, `⚖️ Balanced` < 1600, `🚀 Pro` < 3000, `🏆 Studio` ≥ 3000 | `calculateSetupTier` |
+
+Chips carry `data-tone` (`positive` / `caution` / `danger` / `muted` / `neutral`)
+so the value colour follows the verdict without hardcoding colours in JS.
+Before hours are chosen, CPCH renders `—` with the note "Choose desk hours to
+unlock" rather than a misleading number.
+
+**3000 is inclusive for Studio.** The spec's `> $3000` would leave exactly 3000
+undefined against `< $3000: Pro`; bands are half-open `[min, next)` instead.
+
+### Re-rendering
+
+`updateStep2UI()` now paints the DOM instead of logging (console output is opt-in
+via `RT_Calculator.debug = true`). It is called at boot and on every Step 1 event,
+so a currency switch reformats every amount, the CPCH and the total in one pass.
+
+### Responsive
+
+| Width | Allocation row | Chips |
+| --- | --- | --- |
+| `< 22rem` | label + % on one line, bar below, amount on a third line | 1 column |
+| `≥ 30rem` | single-line: icon · label · bar · % · amount | 1 column |
+| `≥ 44rem` | single-line | 3 columns |
+
 ### Events (integration points for Steps 2–3)
 
 Dispatched on the `.rt-calc` root, bubbling:
@@ -255,7 +320,7 @@ Dispatched on the `.rt-calc` root, bubbling:
 | `rt:painschange` | `{ pains }` |
 | `rt:profilechange` | `{ field, value, state }` |
 | `rt:heightchange` | `{ inches, metrics }` |
-| `rt:step2update` | `{ allocation, amounts, chairAmount, cpch, cpchValue, risk, riskScore, budget, currency }` |
+| `rt:step2update` | `{ allocation, amounts, chairAmount, cpch, cpchValue, risk, riskScore, budget, currency, hours, pains }` |
 
 ```js
 document.addEventListener("rt:heightchange", e => console.log(e.detail.metrics));
@@ -268,8 +333,9 @@ document.addEventListener("rt:heightchange", e => console.log(e.detail.metrics))
 
 ```bash
 npm i --no-save jsdom csstree-validator
-node tests/step1.test.js   # 98 assertions
-node tests/step2.test.js   # 99 assertions
+node tests/step1.test.js     #  98 assertions
+node tests/step2.test.js     # 100 assertions
+node tests/step2-ui.test.js  #  67 assertions
 ```
 
 `step1`: state defaults, slider↔input sync, mid-typing guard, snapping, all three
@@ -279,6 +345,11 @@ currency windows, pain exclusivity, height maths and parsing, events, idempotenc
 pain semantics, money rounding, CPCH in all four hour bands and all three currencies,
 every chair-tier boundary, risk bands, `computeStep2` aggregation, and reactive
 `rt:step2update` wiring.
+
+`step2-ui`: rendered markup and ARIA, default paint, bar widths, percentage/amount
+reconciliation, reactive updates from budget/pain/hours changes, currency reformatting
+(£ and C$), tier boundaries, extremes, a 120-case fuzz asserting percentages total 100
+and amounts total the budget, and graceful degradation when the panel is absent.
 
 ## Design tokens
 
@@ -321,6 +392,6 @@ python3 -m http.server 8000
 - Phase 2 — Step 1 input UI. ✅
 - Phase 3 — Step 1 JS: state, sync, exclusivity, height maths. ✅
 - Phase 4 — Step 2 engine: allocation, CPCH, posture risk. ✅
-- Phase 5 — Step 2 progress-bar UI (consumes `rt:step2update`).
+- Phase 5 — Step 2 progress-bar UI. ✅
 - Phase 6 — results panel and AEO answer block (consumes `rt:heightchange`).
 - Phase 7 — WordPress shortcode / block wrapper, `wp_enqueue_script` with `defer`.

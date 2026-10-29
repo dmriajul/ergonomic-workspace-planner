@@ -1043,3 +1043,283 @@
 .rt-select:has(option[value=""]:checked) {
   color: var(--rt-text-dim);
 }
+
+/* ==========================================================================
+   11. STEP 2 — BUDGET PREVIEW (allocation bars + metric chips)
+   --------------------------------------------------------------------------
+   Progress bars read their width from --rt-alloc (set inline by JS, defaulted
+   in CSS so the static markup renders correctly with no script). Only `width`
+   animates, so the paint stays cheap on every slider tick.
+   ========================================================================== */
+
+.rt-preview {
+  display: grid;
+  gap: var(--rt-space-5);
+}
+
+.rt-preview__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--rt-space-1) var(--rt-space-4);
+}
+
+.rt-preview__title {
+  font-size: var(--rt-text-lg);
+}
+
+.rt-preview__meta {
+  font-size: var(--rt-text-sm);
+  color: var(--rt-text-muted);
+}
+
+.rt-preview__total {
+  font-family: var(--rt-font-mono);
+  font-weight: var(--rt-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--rt-text);
+}
+
+/* --------------------------------------------------------------------------
+   11.1 Allocation rows
+   -------------------------------------------------------------------------- */
+.rt-alloc {
+  display: grid;
+  gap: var(--rt-space-3);
+}
+
+.rt-alloc__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "icon label pct amount"
+    "track track track track";
+  align-items: center;
+  gap: var(--rt-space-2) var(--rt-space-3);
+  padding: var(--rt-space-3);
+  background-color: var(--rt-surface);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-sm);
+  transition: border-color var(--rt-dur-fast) var(--rt-ease);
+}
+
+.rt-alloc__row:hover {
+  border-color: var(--rt-border-strong);
+}
+
+.rt-alloc__icon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.95rem;
+  line-height: 1;
+  background-color: var(--rt-bg);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-xs);
+}
+
+.rt-alloc__label {
+  grid-area: label;
+  min-width: 0;
+  font-size: var(--rt-text-base);
+  font-weight: var(--rt-weight-medium);
+  color: var(--rt-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rt-alloc__pct {
+  grid-area: pct;
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-sm);
+  font-weight: var(--rt-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--rt-text);
+}
+
+.rt-alloc__amount {
+  grid-area: amount;
+  min-width: 4.5ch;
+  font-family: var(--rt-font-mono);
+  font-size: var(--rt-text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--rt-text-muted);
+}
+
+/* ---- track + animated bar ---- */
+.rt-alloc__track {
+  grid-area: track;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  background-color: var(--rt-bg);
+  border-radius: var(--rt-radius-pill);
+  box-shadow: inset 0 0 0 1px var(--rt-border);
+}
+
+.rt-alloc__bar {
+  display: block;
+  width: var(--rt-alloc, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    90deg,
+    var(--rt-cat-from, var(--rt-accent)),
+    var(--rt-cat-to, var(--rt-accent))
+  );
+  /* The one thing allowed to animate here: width, on every value change. */
+  transition: width 0.4s ease;
+  will-change: width;
+}
+
+/* Per-category hue, derived from tokens so rebranding stays a one-file job. */
+.rt-alloc__row[data-category="chair"] {
+  --rt-cat-from: var(--rt-accent);
+  --rt-cat-to: color-mix(in oklab, var(--rt-accent) 55%, #fff);
+}
+
+.rt-alloc__row[data-category="desk"] {
+  --rt-cat-from: var(--rt-info);
+  --rt-cat-to: color-mix(in oklab, var(--rt-info) 55%, #fff);
+}
+
+.rt-alloc__row[data-category="monitor"] {
+  --rt-cat-from: var(--rt-signal);
+  --rt-cat-to: color-mix(in oklab, var(--rt-signal) 55%, #fff);
+}
+
+.rt-alloc__row[data-category="keyboard"] {
+  --rt-cat-from: var(--rt-violet);
+  --rt-cat-to: color-mix(in oklab, var(--rt-violet) 55%, #fff);
+}
+
+.rt-alloc__row[data-category="lighting"] {
+  --rt-cat-from: var(--rt-warn);
+  --rt-cat-to: color-mix(in oklab, var(--rt-warn) 55%, #fff);
+}
+
+.rt-alloc__row[data-category="cables"] {
+  --rt-cat-from: var(--rt-text-muted);
+  --rt-cat-to: var(--rt-text-dim);
+}
+
+/* --------------------------------------------------------------------------
+   11.2 Metric chips
+   -------------------------------------------------------------------------- */
+.rt-chips {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--rt-space-3);
+}
+
+.rt-chip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon label"
+    "value value"
+    "note note";
+  align-items: center;
+  gap: var(--rt-space-1) var(--rt-space-2);
+  padding: var(--rt-space-4);
+
+  background-color: var(--rt-surface-raised);
+  background-image: var(--rt-grad-surface);
+  border: var(--rt-border-width) solid var(--rt-border);
+  border-radius: var(--rt-radius-md);
+  box-shadow: var(--rt-shadow-sm);
+}
+
+.rt-chip__icon {
+  grid-area: icon;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.rt-chip__label {
+  grid-area: label;
+  font-size: var(--rt-text-xs);
+  font-weight: var(--rt-weight-semibold);
+  letter-spacing: var(--rt-tracking-wide);
+  text-transform: uppercase;
+  color: var(--rt-text-dim);
+}
+
+.rt-chip__value {
+  grid-area: value;
+  font-family: var(--rt-font-display);
+  font-size: var(--rt-text-xl);
+  font-weight: var(--rt-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--rt-leading-tight);
+  letter-spacing: var(--rt-tracking-tight);
+  color: var(--rt-text);
+}
+
+.rt-chip__note {
+  grid-area: note;
+  font-size: var(--rt-text-xs);
+  line-height: var(--rt-leading-snug);
+  color: var(--rt-text-muted);
+}
+
+/* Value colour reflects the metric's verdict. */
+.rt-chip[data-tone="positive"] .rt-chip__value {
+  color: var(--rt-signal);
+}
+
+.rt-chip[data-tone="caution"] .rt-chip__value {
+  color: var(--rt-warn);
+}
+
+.rt-chip[data-tone="danger"] .rt-chip__value {
+  color: var(--rt-danger);
+}
+
+.rt-chip[data-tone="muted"] .rt-chip__value {
+  color: var(--rt-text-dim);
+}
+
+/* --------------------------------------------------------------------------
+   11.3 Step 2 responsive behaviour
+   -------------------------------------------------------------------------- */
+@media (min-width: 30rem) {
+  .rt-alloc__row {
+    grid-template-columns: auto minmax(5rem, 8rem) minmax(0, 1fr) 3.5rem 5rem;
+    grid-template-areas: "icon label track pct amount";
+  }
+}
+
+@media (min-width: 44rem) {
+  .rt-chips {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 22rem) {
+  .rt-alloc__row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "icon label pct"
+      "track track track"
+      "amount amount amount";
+  }
+
+  .rt-alloc__amount {
+    text-align: left;
+  }
+}
+
+/* Chips read as a quiet summary; keep their type from overwhelming the card. */
+@media (min-width: 44rem) {
+  .rt-chip__value {
+    font-size: var(--rt-text-lg);
+  }
+}

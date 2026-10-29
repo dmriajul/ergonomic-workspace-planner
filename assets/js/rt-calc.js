@@ -27,7 +27,10 @@
  *  .calculateCPCHValue(...)        → raw number | null
  *  .calculatePostureRisk(chair$, hours, pains) → { level, label }
  *  .computeStep2(snapshot?)        → full Step 2 result object
- *  .updateStep2UI()                → logs + emits rt:step2update
+ *  .calculateSetupTier(budget)     → { key, label, note }
+ *  .toDisplayPercentages(alloc)    → integer % summing to 100
+ *  .updateStep2UI()                → paints the panel + emits rt:step2update
+ *  .debug                          → true to re-enable the console dump
  *
  *  .init()                         → idempotent manual (re)initialisation
  *  .version
@@ -80,7 +83,22 @@
     height: "#rt-height",
     hours: "#rt-hours",
     work: "#rt-work",
-    pain: 'input[name="rt-pain"]'
+    pain: 'input[name="rt-pain"]',
+    // Step 2 preview
+    preview: "#rt-budget-preview",
+    allocRow: "[data-category]",
+    allocTrack: ".rt-alloc__track",
+    allocBar: ".rt-alloc__bar",
+    allocPct: ".rt-alloc__pct",
+    allocAmount: ".rt-alloc__amount",
+    allocLabel: ".rt-alloc__label",
+    allocTotal: "#rt-alloc-total",
+    metricCPCH: "#rt-metric-cpch",
+    metricCPCHNote: "#rt-metric-cpch-note",
+    metricRisk: "#rt-metric-risk",
+    metricRiskNote: "#rt-metric-risk-note",
+    metricTier: "#rt-metric-tier",
+    metricTierNote: "#rt-metric-tier-note"
   };
 
   /* =========================================================================
@@ -619,6 +637,18 @@
     { below: 400, points: 1 }
   ];
 
+  /**
+   * Setup tiers by total budget. Bands are half-open [min, next.min) and the
+   * last entry catches everything above, so exactly 3000 lands in Studio
+   * instead of falling through a "> 3000" gap.
+   */
+  var SETUP_TIERS = [
+    { min: 0, key: "starter", label: "\uD83C\uDF31 Starter", note: "Essentials-first build" },
+    { min: 700, key: "balanced", label: "\u2696\uFE0F Balanced", note: "Solid mid-range build" },
+    { min: 1600, key: "pro", label: "\uD83D\uDE80 Pro", note: "Serious workstation" },
+    { min: 3000, key: "studio", label: "\uD83C\uDFC6 Studio", note: "Full studio build" }
+  ];
+
   /** Total score → risk band. Max possible score is 4 + 3 + 3 = 10. */
   var RISK_BANDS = [
     { max: 2, level: "low", label: "\uD83D\uDFE2 Low" },
@@ -922,7 +952,72 @@
     return { level: "high", label: "\uD83D\uDD34 High" }; // unreachable safeguard
   }
 
-  /* ---- 8.6 Step 2 aggregation + UI hook ---------------------------------- */
+  /* ---- 8.6 Setup tier ---------------------------------------------------- */
+
+  /**
+   * Classify a total budget into a setup tier.
+   * @param  {number} budget
+   * @return {{key:string, label:string, note:string}}
+   */
+  function calculateSetupTier(budget) {
+    var total = Number(budget);
+    if (!isFinite(total)) total = 0;
+
+    var match = SETUP_TIERS[0];
+    for (var i = 0; i < SETUP_TIERS.length; i++) {
+      if (total >= SETUP_TIERS[i].min) match = SETUP_TIERS[i];
+    }
+    return { key: match.key, label: match.label, note: match.note };
+  }
+
+  /* ---- 8.7 Display helpers (pure) ---------------------------------------- */
+
+  /**
+   * Integer percentages that sum to exactly 100 (largest-remainder method).
+   * Rounding each ratio independently would print "34% 26% 20% 10% 5% 5%" = 100
+   * here, but neighbouring states can total 99 or 101 and look broken.
+   *
+   * @param  {Object<string,number>} allocation
+   * @return {Object<string,number>} integer percentages keyed by category
+   */
+  function toDisplayPercentages(allocation) {
+    var keys = ALLOCATION_KEYS;
+    var raw = {};
+    var floored = {};
+    var total = 0;
+    var largestKey = keys[0];
+
+    keys.forEach(function (key) {
+      var ratio = Number(allocation[key]) || 0;
+      raw[key] = ratio * 100;
+      floored[key] = Math.floor(raw[key]);
+      total += floored[key];
+      if (raw[key] > raw[largestKey]) largestKey = key;
+    });
+
+    var remainder = 100 - total; // 0..5 in practice
+    if (remainder !== 0) {
+      // Hand the leftover units to the biggest fractional parts first.
+      var order = keys.slice().sort(function (a, b) {
+        return (raw[b] - floored[b]) - (raw[a] - floored[a]);
+      });
+      for (var i = 0; i < order.length && remainder > 0; i++, remainder--) {
+        floored[order[i]] += 1;
+      }
+      // Pathological fallback: not enough fractional parts to distribute.
+      if (remainder > 0) floored[largestKey] += remainder;
+    }
+
+    return floored;
+  }
+
+  /** Format money for display: currency symbol + grouped whole units. */
+  function formatMoney(amount, currency) {
+    var code = CURRENCIES[currency] ? currency : DEFAULT_CURRENCY;
+    return CURRENCIES[code].symbol + formatAmount(Math.round(Number(amount) || 0), code);
+  }
+
+  /* ---- 8.8 Step 2 aggregation + UI hook ---------------------------------- */
 
   /**
    * Run the whole Step 2 pipeline for a state snapshot.
@@ -951,6 +1046,8 @@
     return {
       budget: budget,
       currency: currency,
+      hours: data.hours,
+      pains: pains.slice(),
       allocation: allocation,
       amounts: amounts,
       chairAmount: amounts.chair,
@@ -962,19 +1059,142 @@
   }
 
   /**
-   * Step 2 UI hook. Reads live state, runs the engine, publishes the result.
-   * The progress bars land next phase — for now this only logs, and emits
-   * `rt:step2update` so the upcoming UI (or Step 3) can subscribe.
+   * Render a computed Step 2 result into the #rt-slot-budget panel.
+   * Pure DOM writing — no math, no state mutation.
    *
-   * @return {Object|null} the computed snapshot (handy in tests / console)
+   * @param {Object} result  output of computeStep2()
+   * @param {Object} refs    cached element references from init
+   */
+  function renderStep2UI(result, refs) {
+    if (!refs) return;
+
+    var currency = result.currency;
+    var percentages = toDisplayPercentages(result.allocation);
+
+    /* ---- allocation rows ---- */
+    refs.rows.forEach(function (row) {
+      var key = row.getAttribute("data-category");
+      var ratio = result.allocation[key];
+      var amount = result.amounts[key];
+      if (ratio === undefined) return;
+
+      var percent = percentages[key];
+      var money = formatMoney(amount, currency);
+      var label = row.querySelector(SELECTOR.allocLabel);
+      var labelText = label ? label.textContent : key;
+
+      // Exact ratio for the bar (keeps sub-1% differences visible)…
+      var bar = row.querySelector(SELECTOR.allocBar);
+      if (bar) bar.style.setProperty("--rt-alloc", (ratio * 100).toFixed(2) + "%");
+
+      // …integer percentage for the readable label, so the column sums to 100.
+      var pct = row.querySelector(SELECTOR.allocPct);
+      if (pct) pct.textContent = percent + "%";
+
+      var amountEl = row.querySelector(SELECTOR.allocAmount);
+      if (amountEl) amountEl.textContent = money;
+
+      var track = row.querySelector(SELECTOR.allocTrack);
+      if (track) {
+        track.setAttribute("aria-valuenow", String(percent));
+        track.setAttribute("aria-valuetext", labelText + " " + percent + " percent, " + money);
+      }
+    });
+
+    /* ---- total ---- */
+    if (refs.total) refs.total.textContent = formatMoney(result.budget, currency);
+
+    /* ---- chip: CPCH ---- */
+    if (refs.cpch) {
+      var hours = resolveHours(result.hours);
+      if (result.cpch === null) {
+        refs.cpch.textContent = "\u2014";
+        setTone(refs.cpch, "muted");
+        if (refs.cpchNote) refs.cpchNote.textContent = "Choose desk hours to unlock";
+      } else {
+        refs.cpch.textContent = result.cpch + "/hr";
+        setTone(refs.cpch, "positive");
+        if (refs.cpchNote) {
+          refs.cpchNote.textContent = hours
+            ? hours.hours + " hrs/day \u00D7 365 \u00D7 5 working days"
+            : "Per comfort hour, amortised over 5 years";
+        }
+      }
+    }
+
+    /* ---- chip: posture risk ---- */
+    if (refs.risk) {
+      refs.risk.textContent = result.risk.label;
+      setTone(
+        refs.risk,
+        result.risk.level === "low"
+          ? "positive"
+          : result.risk.level === "moderate"
+          ? "caution"
+          : "danger"
+      );
+      if (refs.riskNote) refs.riskNote.textContent = describeRisk(result.riskScore);
+    }
+
+    /* ---- chip: setup tier ---- */
+    var tier = calculateSetupTier(result.budget);
+    if (refs.tier) {
+      refs.tier.textContent = tier.label;
+      setTone(refs.tier, "neutral");
+    }
+    if (refs.tierNote) refs.tierNote.textContent = tier.note;
+
+    /* ---- expose for styling hooks ---- */
+    if (refs.preview) {
+      refs.preview.setAttribute("data-currency", currency);
+      refs.preview.setAttribute("data-tier", tier.key);
+      refs.preview.setAttribute("data-risk", result.risk.level);
+    }
+  }
+
+  /** Colour the chip value via its parent's data-tone attribute. */
+  function setTone(el, tone) {
+    var chip = el.closest ? el.closest(".rt-chip") : null;
+    if (chip) chip.setAttribute("data-tone", tone);
+  }
+
+  /** Human sentence explaining what pushed the risk score up. */
+  function describeRisk(score) {
+    var causes = [];
+    if (score.chairPoints > 0) causes.push("chair spend");
+    if (score.hoursPoints > 0) causes.push("long desk hours");
+    if (score.painPoints > 0) {
+      causes.push(score.painPoints === 1 ? "1 pain point" : score.painPoints + " pain points");
+    }
+    if (!causes.length) return "No risk factors detected";
+    return "Driven by " + causes.join(" \u00B7 ");
+  }
+
+  /**
+   * Step 2 UI hook. Reads live state, runs the engine, paints the panel, and
+   * publishes `rt:step2update`. Console output is opt-in via RT_Calculator.debug.
+   *
+   * @return {Object} the computed snapshot (handy in tests / console)
    */
   function updateStep2UI() {
     var result = computeStep2();
 
-    // A null CPCH means no hours chosen yet — say so rather than logging null.
-    var cpchText = result.cpch === null ? "(pick daily hours)" : result.cpch;
+    renderStep2UI(result, step2Refs);
 
-    if (window.console && typeof window.console.groupCollapsed === "function") {
+    if (RT_Calculator && RT_Calculator.debug) logStep2(result);
+
+    var root = document.querySelector(SELECTOR.root);
+    if (root) emit(root, "rt:step2update", result);
+
+    return result;
+  }
+
+  /** Opt-in console dump (RT_Calculator.debug = true). */
+  function logStep2(result) {
+    if (!window.console) return;
+
+    var cpchText = result.cpch === null ? "(pick daily hours)" : result.cpch;
+    if (typeof window.console.groupCollapsed === "function") {
       window.console.groupCollapsed(
         "[RT] Step 2 \u2014 " + result.currency + " " + formatAmount(result.budget, result.currency)
       );
@@ -982,15 +1202,36 @@
       window.console.log("Amounts:", result.amounts);
       window.console.log("CPCH:", cpchText);
       window.console.log("Posture risk:", result.risk.label, result.riskScore);
+      window.console.log("Setup tier:", calculateSetupTier(result.budget).label);
       window.console.groupEnd();
     } else {
       window.console.log("[RT] Step 2", result);
     }
+  }
 
-    var root = document.querySelector(SELECTOR.root);
-    if (root) emit(root, "rt:step2update", result);
+  /* ---- 8.9 Cached Step 2 element references ------------------------------ */
 
-    return result;
+  /** Filled during init(); renderStep2UI() is a no-op until then. */
+  var step2Refs = null;
+
+  /** Cache the Step 2 DOM once, so re-renders never re-query the document. */
+  function cacheStep2Refs(root) {
+    var preview = root.querySelector(SELECTOR.preview);
+    if (!preview) return null;
+
+    return {
+      preview: preview,
+      rows: Array.prototype.slice.call(
+        preview.querySelectorAll(SELECTOR.allocRow)
+      ),
+      total: preview.querySelector(SELECTOR.allocTotal),
+      cpch: preview.querySelector(SELECTOR.metricCPCH),
+      cpchNote: preview.querySelector(SELECTOR.metricCPCHNote),
+      risk: preview.querySelector(SELECTOR.metricRisk),
+      riskNote: preview.querySelector(SELECTOR.metricRiskNote),
+      tier: preview.querySelector(SELECTOR.metricTier),
+      tierNote: preview.querySelector(SELECTOR.metricTierNote)
+    };
   }
 
   /* =========================================================================
@@ -1019,6 +1260,10 @@
       workSelect: root.querySelector(SELECTOR.work)
     };
 
+    // Cache Step 2 refs first: Step 1's init emits events, and those listeners
+    // render the panel.
+    step2Refs = cacheStep2Refs(root);
+
     initBudget(ctx);
     initProfile(ctx);
     initPainPoints(ctx);
@@ -1045,7 +1290,7 @@
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.4.0";
+  RT_Calculator.version = "0.5.0";
   RT_Calculator.getState = getState;
 
   // Step 1
@@ -1060,9 +1305,14 @@
   RT_Calculator.calculatePostureRisk = calculatePostureRisk;
   RT_Calculator.calculatePostureRiskScore = calculatePostureRiskScore;
   RT_Calculator.computeStep2 = computeStep2;
+  RT_Calculator.calculateSetupTier = calculateSetupTier;
+  RT_Calculator.toDisplayPercentages = toDisplayPercentages;
 
   // Step 2 UI hook
   RT_Calculator.updateStep2UI = updateStep2UI;
+
+  /** Set true to restore the console dump. Off by default: the UI is the output. */
+  RT_Calculator.debug = false;
 
   RT_Calculator.currencies = CURRENCIES;
   RT_Calculator.hoursProfile = HOURS_PROFILE;
