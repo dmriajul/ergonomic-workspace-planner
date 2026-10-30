@@ -1,5 +1,5 @@
 /**
- * tests/step1.test.js — behavioural tests for Step 1 (rt-calc.js)
+ * tests/step1.test.js: behavioural tests for Step 1 (rt-calc.js)
  * ---------------------------------------------------------------------------
  * Runs the real index.html through jsdom with the controller inlined, then
  * drives the controls exactly as a user would (input/change events).
@@ -41,7 +41,7 @@ const ok = (cond, label, extra = '') => {
   window.console.log = (...a) =>
     logs.push(a.map(x => (x && typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' '));
 
-  /* Wait for DOMContentLoaded/load — the controller defers to it */
+  /* Wait for DOMContentLoaded/load: the controller defers to it */
   await new Promise(res => {
     if (doc.readyState === 'complete') return res();
     window.addEventListener('load', res, { once: true });
@@ -239,6 +239,6 @@ const ok = (cond, label, extra = '') => {
   ok(parseFloat(range.style.getPropertyValue('--rt-range-fill')) === fillCheck(2600, 200, 5000),
      'mid -> (v-min)/(max-min) = 50%', range.style.getPropertyValue('--rt-range-fill'));
 
-  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} — ${pass} passed, ${fail} failed`);
+  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
 })();

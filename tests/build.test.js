@@ -1,5 +1,5 @@
 /**
- * tests/build.test.js — the WordPress production artefacts
+ * tests/build.test.js: the WordPress production artefacts
  * ---------------------------------------------------------------------------
  * Proves the single-file build is (a) genuinely self-contained, (b) scoped so
  * it cannot leak into a host theme, (c) still functional end-to-end, and
@@ -218,6 +218,6 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
      'guide warns not to reuse someone else\'s tracking tag');
   ok(/line \d+/.test(guide), 'guide gives line numbers');
 
-  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
+  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
 })();

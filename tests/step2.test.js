@@ -1,5 +1,5 @@
 /**
- * tests/step2.test.js — Step 2 engine: Ergo Budget Ratio™, CPCH, Posture Risk
+ * tests/step2.test.js: Step 2 engine, Ergo Budget Ratio™, CPCH, Posture Risk
  * ---------------------------------------------------------------------------
  * Two layers:
  *   1. Pure-function tests, driven directly through window.RT_Calculator.
@@ -138,7 +138,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
   ok(JSON.stringify(orderA) === JSON.stringify(orderB),
      'modifier order does not matter (additive)', [orderA, orderB]);
   // Stacking the same pain twice drives cables to -0.01 and lighting to exactly
-  // 0.01 — both lock at the floor — so the remaining four renormalise by 0.98
+  // 0.01, both lock at the floor, so the remaining four renormalise by 0.98
   // and chair lands at 0.441, not 0.45.
   const dupes = RT.calculateAllocation({ pains: ['lower-back', 'lower-back'] });
   ok(dupes.chair > lb.chair, 'duplicate pain entries stack (chair rises past single-pain)', [dupes.chair, lb.chair]);
@@ -158,7 +158,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
   ok(sumOf(odd) === 1234, 'rounding drift absorbed: 1234 still sums exactly', sumOf(odd));
 
   /* ================= 6. CPCH ================= */
-  console.log('\n6. CPCH — Cost-Per-Comfort-Hour™');
+  console.log('\n6. CPCH: Cost-Per-Comfort-Hour™');
   ok(RT.calculateCPCH(1000, '6-8') === '$0.08', 'spec example: 1000 @ 6-8h -> "$0.08"',
      RT.calculateCPCH(1000, '6-8'));
   ok(RT.calculateCPCH(1000, '6to8') === '$0.08', 'Step 1 vocabulary "6to8" gives the same result',
@@ -334,6 +334,6 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
   ok(RT.version === '0.10.0', 'version bumped to 0.10.0', RT.version);
   ok(RT.debug === true, 'debug flag is opt-in and readable', RT.debug);
 
-  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
+  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
 })();

@@ -1,5 +1,5 @@
 /**
- * tests/seo.test.js — SEO, static fallbacks, methodology, WordPress readiness
+ * tests/seo.test.js: SEO, static fallbacks, methodology, WordPress readiness
  * ---------------------------------------------------------------------------
  * Validates the machine-readable surface of index.html:
  *   • JSON-LD parses and satisfies the schema.org properties Google requires
@@ -243,6 +243,6 @@ const staticDoc = staticDom.window.document;
      method.querySelectorAll('article').length);
   ok(d.querySelector('#rt-methodology') !== null, 'methodology present in the booted DOM');
 
-  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
+  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
 })();

@@ -3,18 +3,18 @@
 A modular, namespaced calculator widget for WordPress. Everything renders inside
 `.rt-calc`, so it drops into any theme without inheriting or leaking styles.
 
-**Phase 1:** structure only — HTML skeleton + design tokens.
-**Phase 2:** Step 1 UI — budget, ergonomic profile, pain points.
-**Phase 3:** Step 1 JavaScript — state, sync, pain exclusivity, height maths.
-**Phase 4:** Step 2 engine — Ergo Budget Ratio™, CPCH, Posture Risk.
-**Phase 5:** Step 2 UI — allocation bars + metric chips.
-**Phase 6:** Step 3 — AEO answer box, gear shortlist, affiliate disclosure.
-**Phase 7:** SEO — JSON-LD schema, static crawlable fallback,
+**Phase 1:** structure only: HTML skeleton + design tokens.
+**Phase 2:** Step 1 UI: budget, ergonomic profile, pain points.
+**Phase 3:** Step 1 JavaScript: state, sync, pain exclusivity, height maths.
+**Phase 4:** Step 2 engine: Ergo Budget Ratio™, CPCH, Posture Risk.
+**Phase 5:** Step 2 UI: allocation bars + metric chips.
+**Phase 6:** Step 3: AEO answer box, gear shortlist, affiliate disclosure.
+**Phase 7:** SEO: JSON-LD schema, static crawlable fallback,
 methodology / E-E-A-T section, and WordPress embed guide.
-**Phase 8:** Production packaging — single-file build, enqueue snippet, and the
+**Phase 8:** Production packaging: single-file build, enqueue snippet, and the
 affiliate replacement guide.
 **Phase 9:** Centralised affiliate database at the top of the JS.
-**Phase 10 (current):** One link per product (Amazon OneLink) — 9 links, not 27.
+**Phase 10 (current):** One link per product (Amazon OneLink): 9 links, not 27.
 
 ## Structure
 
@@ -24,8 +24,8 @@ affiliate replacement guide.
 ├── assets/js/
 │   └── rt-calc.js              # Step 1 controller (vanilla, no deps)
 ├── wordpress/                  # production artefacts
-│   ├── single-file.html        #   generated: markup + CSS + JS in one paste-ready file
-│   ├── functions-snippet.php   #   recommended: enqueue CSS/JS separately
+│   ├── single-file.html        #   generated file: markup + CSS + JS in one paste
+│   ├── functions-snippet.php   #   recommended way to enqueue CSS/JS separately
 │   └── REPLACE-THIS.md         #   all 27 affiliate placeholders + canonical
 ├── tools/
 │   └── build-single-file.py    # regenerates wordpress/single-file.html
@@ -38,8 +38,8 @@ affiliate replacement guide.
 │   ├── build.test.js           # production artefacts + drift check (67 assertions)
 │   └── affiliate.test.js       # link database integrity (48 assertions)
 ├── assets/css/
-│   ├── rt-tokens.css           # Layer 0 — design tokens, scoped to .rt-calc
-│   ├── rt-calc.css             # Layer 1 — scoped reset, shell, step skeleton
+│   ├── rt-tokens.css           # Layer 0: design tokens, scoped to .rt-calc
+│   ├── rt-calc.css             # Layer 1: scoped reset, shell, step skeleton
 │   └── demo-page.css           # Preview harness only (not shipped)
 └── README.md
 ```
@@ -49,32 +49,32 @@ affiliate replacement guide.
 | Element | Purpose |
 | --- | --- |
 | `.rt-calc` | Namespaced root. All tokens and styles live under it. |
-| `#rt-step-1` / `#rt-slot-inputs` | Step 1 — ergonomic profiling UI (Phase 2) |
-| `#rt-step-2` / `#rt-slot-budget` | Step 2 — budget preview (empty mount point) |
-| `#rt-step-3` / `#rt-slot-results` | Step 3 — results + AEO answer box (empty, `aria-live="polite"`) |
+| `#rt-step-1` / `#rt-slot-inputs` | Step 1: ergonomic profiling UI (Phase 2) |
+| `#rt-step-2` / `#rt-slot-budget` | Step 2: budget preview (empty mount point) |
+| `#rt-step-3` / `#rt-slot-results` | Step 3: results + AEO answer box (empty, `aria-live="polite"`) |
 
 Each `<section>` carries `data-step="1|2|3"`, an `aria-labelledby` pointing at
 its heading, and a `.rt-calc__slot` mount point. Slots are flagged
 `data-empty="true"` while they hold only their hint; removing that attribute
 (or swapping in real markup) collapses the placeholder styling automatically.
 
-## Step 1 — Ergonomic Profiling
+## Step 1: Ergonomic Profiling
 
 Lives inside `#rt-slot-inputs` as a single `<form class="rt-inputs">`, split into
 three `<fieldset>` blocks so every control is grouped and labelled.
 
 ### Total budget
-- `input[type=radio][name=rt-currency]` — USD / GBP / CAD, USD `checked` by default,
+- `input[type=radio][name=rt-currency]`: USD / GBP / CAD, USD `checked` by default,
   presented as a segmented pill control (`.rt-seg`).
-- `<output id="rt-budget-display">` — the large amount, `aria-live="polite"`.
-- `#rt-budget-range` — `min=200 max=5000 step=50 value=1000`.
-- `#rt-budget-amount` — number input, same range/step/initial value, synced by JS later.
+- `<output id="rt-budget-display">`: the large amount, `aria-live="polite"`.
+- `#rt-budget-range`: `min=200 max=5000 step=50 value=1000`.
+- `#rt-budget-amount`: number input, same range/step/initial value, synced by JS later.
 
 Currency glyphs (`$` / `£` / `C$`) are three spans; CSS reveals exactly one via
 `:has(#rt-cur-gbp:checked)` etc., so no JS is needed for the toggle.
 
 ### Ergonomic profile
-`#rt-height` (ft/in **and** cm in each label), `#rt-hours`, `#rt-work` — native
+`#rt-height` (ft/in **and** cm in each label), `#rt-hours`, `#rt-work`: native
 `<select>` elements with a custom chevron, not a JS listbox.
 
 ### Pain points
@@ -86,7 +86,7 @@ Four `<label class="rt-pain-card">` options, each wrapping a real
 | `neck-shoulder` | Neck / Shoulder |
 | `lower-back` | Lower Back |
 | `wrist-hand` | Wrist / Hand |
-| `no-pain` | No Pain (Preventive) — carries `data-exclusive-group="rt-pain"` |
+| `no-pain` | No Pain (Preventive), which carries `data-exclusive-group="rt-pain"` |
 
 Selected state is pure CSS: `:checked` drives the tick and icon tint, `:has()` adds
 the card glow, with `:checked ~` sibling rules as the non-`:has()` fallback.
@@ -110,7 +110,7 @@ before the script runs.
 
 Touch targets get extra vertical padding under `@media (pointer: coarse)`.
 
-## Step 1 JavaScript — `assets/js/rt-calc.js`
+## Step 1 JavaScript: `assets/js/rt-calc.js`
 
 A single IIFE. No dependencies, no globals except the namespace, no `innerHTML`,
 no `eval`, and no Step 2/3 vocabulary in the source (asserted by the test suite).
@@ -122,7 +122,7 @@ window.RT_Calculator.getState()
 // { budget: 1000, currency: "USD", height: null, hours: null, work: null, pains: [] }
 ```
 
-`getState()` returns a **defensive copy** — mutating it cannot corrupt the widget.
+`getState()` returns a **defensive copy**: mutating it cannot corrupt the widget.
 
 | Key | Type | Notes |
 | --- | --- | --- |
@@ -140,14 +140,14 @@ The three profile fields start as `null`, and the markup now starts on a disable
 
 | Code | Range | Step | Locale |
 | --- | --- | --- | --- |
-| USD | 200 – 5,000 | 50 | `en-US` |
-| GBP | 150 – 4,000 | 50 | `en-GB` |
-| CAD | 250 – 6,500 | 50 | `en-CA` |
+| USD | 200 to 5,000 | 50 | `en-US` |
+| GBP | 150 to 4,000 | 50 | `en-GB` |
+| CAD | 250 to 6,500 | 50 | `en-CA` |
 
 Switching currency re-windows the slider **and** the number input, relabels the
 scale endpoints, repaints the glyph via `data-currency`, and re-clamps the amount
-(5,000 USD → 4,000 GBP). It does **not** convert the value — inventing exchange
-rates is Step 2's problem.
+(5,000 USD → 4,000 GBP). It does **not** convert the value, since inventing
+exchange rates is Step 2's problem.
 
 ### Budget sync
 
@@ -175,11 +175,11 @@ Returns `null` for invalid input rather than throwing.
 
 `RT_Calculator.parseHeightToInches(source)` accepts an `<option>`, a label string
 (`5'8" (173 cm)`, `173 cm`, `6 ft 0`) or a number, and **prefers feet/inches when
-both units appear** — `5'8"` is exactly 68 in, while the label's `173 cm` is a
+both units appear**: `5'8"` is exactly 68 in, while the label's `173 cm` is a
 rounded display of 172.72 cm. Results are `console.log`ged on change until Step 3
 renders them.
 
-## Step 2 Engine — `calculateAllocation`, `calculateCPCH`, `calculatePostureRisk`
+## Step 2 Engine: `calculateAllocation`, `calculateCPCH`, `calculatePostureRisk`
 
 All pure functions: plain values in, plain objects out, no DOM. They are exposed on
 `window.RT_Calculator` and covered by `tests/step2.test.js`.
@@ -210,7 +210,7 @@ until stable. Naive normalisation would drop the locked category back below 1 %
 (e.g. `8+` hours drives cables to 0 %). Verified by a 300-case fuzz test asserting
 `sum == 1 ±1e-9` and `value >= 0.01` for every category.
 
-### CPCH — Cost-Per-Comfort-Hour™
+### CPCH: Cost-Per-Comfort-Hour™
 
 ```js
 RT_Calculator.calculateCPCH(1000, "6-8");     // "$0.08"
@@ -218,7 +218,7 @@ RT_Calculator.calculateCPCHValue(1000, "6-8"); // 0.0783…
 ```
 
 `budget / (hoursPerDay × 365 × 5)`, where hours map `under-4→3, 4-6→5, 6-8→7, 8+→9`.
-Returns the state currency's symbol, 2 decimals — or 3 when the figure rounds to
+Returns the state currency's symbol, 2 decimals, or 3 when the figure rounds to
 `$0.00`, so a small budget never reads as free. Returns `null` (not `0`) when no
 hours are chosen yet.
 
@@ -238,16 +238,16 @@ Score = chair tier + hours penalty + 1 per distinct pain (ignoring `no-pain`).
 | `< 400` | 1 |
 | `≥ 400` | 0 |
 
-Tiers are **first-match, not cumulative** — a cumulative reading would give a
+Tiers are **first-match, not cumulative**: a cumulative reading would give a
 `$100` chair 4+2+1 = 7 points, double-penalising the same fact three times.
-Hours add `0/1/2/3`; pains add 1 each (max 3). Bands: `0–2 Low`, `3–5 Moderate`,
-`6–10 High`. `calculatePostureRiskScore()` exposes the breakdown (`chairPoints`,
+Hours add `0/1/2/3`; pains add 1 each (max 3). Bands: `0 to 2 Low`, `3 to 5 Moderate`,
+`6 to 10 High`. `calculatePostureRiskScore()` exposes the breakdown (`chairPoints`,
 `hoursPoints`, `painPoints`) so Step 3 can explain a verdict.
 
 ### Hours vocabulary
 
 Step 1 emits `lt4 | 4to6 | 6to8 | 8plus`; the Step 2 spec speaks
-`under-4 | 4-6 | 6-8 | 8+`. **Both are accepted everywhere** — the aliases live in a
+`under-4 | 4-6 | 6-8 | 8+`. **Both are accepted everywhere**: the aliases live in a
 single `HOURS_PROFILE` table, so other modules consume the Step 1 value directly and
 never translate. `RT_Calculator.hoursProfile` is exposed for reference.
 
@@ -262,7 +262,7 @@ never translate. `RT_Calculator.hoursProfile` is exposed for reference.
   and again on every Step 1 change (subscribed to the public events, so Step 1's
   handlers stay unaware of Step 2).
 
-## Step 2 UI — `#rt-slot-budget`
+## Step 2 UI: `#rt-slot-budget`
 
 Six allocation rows plus three metric chips. The markup ships with the baseline
 values (USD 1,000, 35/25/20/10/5/5) baked in, so the panel is correct before the
@@ -290,7 +290,7 @@ JS writes the *exact* ratio (`style.setProperty("--rt-alloc", "35.00%")`) so
 sub-1% differences stay visible, while the printed percentage is an integer.
 
 **Percentages are distributed with the largest-remainder method** so the six
-labels always total exactly 100% — rounding each ratio independently gives
+labels always total exactly 100%, because rounding each ratio independently gives
 `34 + 26 + 20 + 10 + 5 + 5 = 100` today but produces 99 or 101 for neighbouring
 states, which reads as a bug. Amounts are rounded the same way (drift absorbed on
 the largest line), so the amount column always totals the budget exactly.
@@ -305,8 +305,8 @@ the largest line), so the amount column always totals the budget exactly.
 
 Chips carry `data-tone` (`positive` / `caution` / `danger` / `muted` / `neutral`)
 so the value colour follows the verdict without hardcoding colours in JS.
-Before hours are chosen, CPCH renders `—` with the note "Choose desk hours to
-unlock" rather than a misleading number.
+Before hours are chosen, CPCH renders the words "Not yet" with the note "Add your
+desk hours first", rather than a misleading number.
 
 **3000 is inclusive for Studio.** The spec's `> $3000` would leave exactly 3000
 undefined against `< $3000: Pro`; bands are half-open `[min, next)` instead.
@@ -325,7 +325,7 @@ so a currency switch reformats every amount, the CPCH and the total in one pass.
 | `≥ 30rem` | single-line: icon · label · bar · % · amount | 1 column |
 | `≥ 44rem` | single-line | 3 columns |
 
-## Step 3 — AEO answer box + gear shortlist
+## Step 3: AEO answer box + gear shortlist
 
 Step 3 ships `hidden` and is revealed by the **"Calculate my plan"** button in Step 2
 (`#rt-calculate`, `aria-controls="rt-step-3"`). The button stays `disabled` until
@@ -334,18 +334,18 @@ missing. Budget always counts as valid because the slider clamps it.
 
 ### AEO answer
 
-`#rt-aeo-answer-text` is a real `<p>` in the DOM — not a canvas, framework render or
-JS-built blob — so crawlers and AI answer engines can quote it verbatim. `buildAEOText(state, allocation)`
+`#rt-aeo-answer-text` is a real `<p>` in the DOM (not a canvas, framework render or
+JS-built blob), so crawlers and AI answer engines can quote it verbatim. `buildAEOText(state, allocation)`
 is a pure function:
 
-> For a software developer working 8+ hours daily with lower back pain, the recommended
-> ergonomic desk setup budget is $1,200. Using the Ergo Budget Ratio™ calibrated to OSHA
-> standards, allocate $496 (41%) to an ergonomic chair, $334 (28%) to a desk, and
-> $231 (19%) to a monitor, with the remaining $139 (12%) covering keyboard, lighting
-> and cables.
+> For a software developer working 8+ hours daily with lower back pain, we recommend an
+> Ergonomic Desk Setup Budget of $1,200. The Ergo Budget Ratio, built on OSHA standards,
+> splits it like this: $496 (41%) to an ergonomic chair, $334 (28%) to a desk, and
+> $231 (19%) to a monitor. The other $139 (12%) goes to your keyboard, lighting and
+> cables.
 
 Role, hours band, pain phrasing, currency symbol, budget, and every percentage/amount
-are derived. The amounts come from `allocateAmounts()`, the same rounding path as the
+are calculated from state. The amounts come from `allocateAmounts()`, the same rounding path as the
 cards, so the prose and the UI can never disagree. Static default-state copy is baked
 into the HTML so the panel is never empty for a non-JS crawler.
 
@@ -357,13 +357,13 @@ Tier comes from the **money allocated to that category**, not the total budget:
 | Allocated | Tier |
 | --- | --- |
 | `< 250` | Budget |
-| `250 – 700` | Mid |
+| `250 to 700` | Mid |
 | `> 700` | Premium |
 
-**700 is inclusive for Mid** — a single strict `<` would push exactly $700 into Premium
-and contradict the stated band.
+**700 is inclusive for Mid**, because a single strict `<` would push exactly $700 into
+Premium and contradict the stated band.
 
-`renderProducts()` builds cards with `createElement`/`textContent` only — there is no
+`renderProducts()` builds cards with `createElement`/`textContent` only, so there is no
 `innerHTML`, `insertAdjacentHTML` or `document.write` anywhere in the bundle, so product
 names can never inject markup. Each card shows name, price in the active currency
 (as a machine-readable `<data value>`), star rating with an `aria-label`, a
@@ -389,7 +389,7 @@ visible plan never goes stale.
 Replace the mock `https://amzn.to/...` links in `AFFILIATE_PRODUCTS` with real tracking
 links per region, and confirm the prices/ratings are current. The catalogue is mock data.
 
-### Events (integration points for Steps 2–3)
+### Events (integration points for Steps 2 to 3)
 
 Dispatched on the `.rt-calc` root, bubbling:
 
@@ -408,7 +408,7 @@ document.addEventListener("rt:heightchange", e => console.log(e.detail.metrics))
 ```
 
 `RT_Calculator.init()` is idempotent and safe to call after AJAX-injected markup
-(a WordPress reality) — it is a no-op once `[data-rt-ready]` is set.
+(a WordPress reality), and it is a no-op once `[data-rt-ready]` is set.
 
 ### Tests
 
@@ -442,18 +442,18 @@ and amounts total the budget, and graceful degradation when the panel is absent.
 
 Two JSON-LD blocks in `<head>`:
 
-- **`SoftwareApplication`** — name (`Smart Ergonomic Budget Calculator`), description,
+- **`SoftwareApplication`**: name (`Smart Ergonomic Budget Calculator`), description,
   `operatingSystem`, `applicationCategory: HealthApplication`, `isAccessibleForFree`,
   `featureList`, and `offers` as an `Offer` with `price: "0"` / `priceCurrency: USD`.
   Google's SoftwareApplication rich result requires `name`, `operatingSystem` and one of
-  `offers` / `aggregateRating` / `review` — all satisfied.
-- **`FAQPage`** — three questions (budget sizing, the Ergo Budget Ratio, chair vs desk),
+  `offers` / `aggregateRating` / `review`, all satisfied.
+- **`FAQPage`**: three questions (budget sizing, the Ergo Budget Ratio, chair vs desk),
   each with an `acceptedAnswer` of `@type: Answer`. Answers quote figures that match the
   implementation exactly: 35/25/20/10/5/5 baseline, the 1% floor, and the real slider
-  ranges (200–5,000 USD, 150–4,000 GBP, 250–6,500 CAD). `seo.test.js` asserts that match,
+  ranges (200 to 5,000 USD, 150 to 4,000 GBP, 250 to 6,500 CAD). `seo.test.js` asserts that match,
   so the copy cannot drift away from the code.
 
-`seo.test.js` parses both blocks and checks every required property — plus that no
+`seo.test.js` parses both blocks and checks every required property, plus that no
 `SoftwareApplication` duplicate is introduced elsewhere.
 
 > Note: since 2023 Google limits FAQ *rich results* to authoritative health/government
@@ -461,8 +461,8 @@ Two JSON-LD blocks in `<head>`:
 
 ### Static fallback (the page works without JavaScript)
 
-`#rt-aeo-answer-text` ships with real, readable advice — the 35/25/20 baseline plus how
-pain points shift it — rather than being filled only by JS. It is deliberately **neutral**:
+`#rt-aeo-answer-text` ships with real, readable advice (the 35/25/20 baseline plus how
+pain points shift it) rather than being filled only by JS. It is deliberately **neutral**:
 it quotes no invented personal budget, so a crawler never indexes a fake `$1,000` result
 as though it were the visitor's.
 
@@ -476,13 +476,13 @@ crawlable copy with a "fill in your details" restatement.
 `<section class="rt-methodology" id="rt-methodology">` sits **outside** `.rt-calc` (it is
 editorial content, not part of the widget) and documents:
 
-- **How We Calculate Your Budget** — the allocation table, every modifier, the 1% floor
+- **How We Calculate Your Budget**: the allocation table, every modifier, the 1% floor
   and the share-evening step (renormalisation), all described in plain English.
-- **CPCH** — `budget ÷ (hours × 365 × 5)`, with the five-year service-life assumption
+- **CPCH**: `budget ÷ (hours × 365 × 5)`, with the five-year service-life assumption
   stated.
-- **Posture risk** — chair tiers, hour penalties, pain points and the 0–2 / 3–5 / 6+ bands.
-- **Anthropometric reference** — stature × 0.41 seated, × 0.63 standing.
-- **Standards referenced** — OSHA Computer Workstations eTool, ISO 9241-5, ANSI/HFES 100,
+- **Posture risk**: chair tiers, hour penalties, pain points and the 0 to 2 / 3 to 5 / 6+ bands.
+- **Anthropometric reference**: stature × 0.41 seated, × 0.63 standing.
+- **Standards referenced**: OSHA Computer Workstations eTool, ISO 9241-5, ANSI/HFES 100,
   with an explicit note that the tool is *not* certified to or endorsed by them.
 - **Medical disclaimer** and **affiliate disclosure** (naming Amazon Associates and
   stating that affiliate status does not influence the model or the product tier).
@@ -495,8 +495,8 @@ touching `:root`.
 
 Descriptive `<title>`, a 100+ character `meta description`, `robots` with
 `max-image-preview:large`, and a `rel=canonical`. The canonical currently points at
-`https://example.com/...` — **replace it with the real URL before launch** (the test
-asserts it is a marked placeholder so this cannot be forgotten silently).
+`https://example.com/...`. **Replace it with the real URL before launch.** The test
+asserts it is a marked placeholder, so this cannot be forgotten silently.
 
 ## WordPress embedding
 
@@ -513,7 +513,7 @@ Rules that keep it portable:
 - Load `rt-tokens.css` **before** `rt-calc.css` (the component layer depends on the variables).
 - `rt-calc.js` self-initialises on `DOMContentLoaded` and `init()` is idempotent, so it also
   works when the markup is injected later via AJAX.
-- **Never enqueue `demo-page.css`** — it is the preview harness only.
+- **Never enqueue `demo-page.css`**: it is the preview harness only.
 - Emit **one** `SoftwareApplication` node per URL; drop ours if an SEO plugin already
   outputs one.
 
@@ -535,7 +535,7 @@ Three artefacts, documented in `wordpress/`:
 `tools/build-single-file.py` copies the widget markup and methodology section out of
 `index.html`, inlines `rt-tokens.css` + `rt-calc.css`, and inlines `rt-calc.js`. Because
 the artefact embeds a *copy* of the JS, it would silently rot the moment the sources
-change — so `tests/build.test.js` rebuilds it in place and fails if the output is not
+change, so `tests/build.test.js` rebuilds it in place and fails if the output is not
 byte-identical. Editing `rt-calc.js` and forgetting to rebuild breaks the suite.
 
 ### Scope guarantees in the single file
@@ -576,17 +576,17 @@ var RT_AFFILIATE_LINKS = {
 };
 ```
 
-**One link per product — 9 in total.** Amazon OneLink (or any geo-redirecting
+**One link per product, 9 links in total.** Amazon OneLink (or any geo-redirecting
 short link) forwards each visitor to their local storefront, so there is no
 per-currency URL to maintain.
 
 ### How a link is picked at runtime
 
 1. The money allocated to the category selects the tier: `<250` budget,
-   `250–700` mid, `>700` premium.
+   `250 to 700` mid, `>700` premium.
 2. The URL is read from `RT_AFFILIATE_LINKS[category][tier].link`.
 
-`resolveAffiliateLink(product)` takes **no currency argument** — that omission is
+`resolveAffiliateLink(product)` takes **no currency argument**, and that omission is
 the guarantee, not an oversight. Currency still does its full job elsewhere:
 slider windows, budget amounts, percentages, CPCH, prices on the cards and the
 AEO prose all reformat between USD / GBP / CAD. It simply no longer reaches URL
@@ -597,11 +597,11 @@ resolution.
 Bulk-editing 9 URLs by hand is still where typos hide, so every slot is asserted
 to be:
 
-- a **single** `link` string — a `links: { USD, GBP, CAD }` object fails the suite
+- a **single** `link` string (a `links: { USD, GBP, CAD }` object fails the suite)
 - a **full `https://` URL** on `amzn.to` **or** an `amazon.*` storefront
 - carrying a **`?tag=`** when a full product URL is used (an untagged link earns nothing)
-- paired with a **numeric** `price` and a `0–5` `rating`
-- **distinct** — duplicate links are reported, so a copy-paste slip is caught
+- paired with a **numeric** `price` and a `0 to 5` `rating`
+- **distinct**: duplicates are reported, so a copy-paste slip is caught
 
 It also asserts the currency contract directly: switching USD → GBP → CAD leaves
 every `href` byte-identical while the price symbols change. That is the exact
@@ -612,7 +612,7 @@ the database, so the object stays pure link/product data.
 
 ## Design tokens
 
-All tokens are declared on `.rt-calc` — never `:root` — so a theme can neither
+All tokens are declared on `.rt-calc` (never `:root`), so a theme can neither
 override them by accident nor inherit them.
 
 | Token | Value | Use |
@@ -624,7 +624,7 @@ override them by accident nor inherit them.
 | `--rt-accent` / `--rt-signal` | `#6366f1` / `#2dd4bf` | Primary / highlight |
 | `--rt-font-sans` / `--rt-font-display` / `--rt-font-mono` | Inter / Sora / system mono | Typography |
 | `--rt-space-1…16` | 4pt scale | Spacing |
-| `--rt-radius-*`, `--rt-shadow-*`, `--rt-ease`, `--rt-dur-*` | — | Radii, elevation, motion |
+| `--rt-radius-*`, `--rt-shadow-*`, `--rt-ease`, `--rt-dur-*` | (none) | Radii, elevation, motion |
 
 Changing the brand is a one-file job: override the tokens, leave the components
 untouched.
@@ -634,10 +634,10 @@ untouched.
 All visitor-facing copy follows one style guide, and `tests/*` assert the parts that
 matter so the tone cannot drift:
 
-- **No em dashes (U+2014) or en dashes (U+2013)** anywhere in shipped files, including
-  HTML comments, JS strings, CSS comments and the generated single file. Use a colon,
-  a comma, a full stop or brackets instead. Numeric ranges read "4 to 6 hrs", never
-  "4–6 hrs".
+- **No em dashes (U+2014) or en dashes (U+2013)** anywhere in the repository: HTML,
+  JS, CSS comments, the generated single file, tests, this README and the WordPress
+  guides. Use a colon, a comma, a full stop or brackets instead. Numeric ranges never
+  use a dash, so they read "4 to 6 hrs".
 - **Grade 6 to 8 conversational English**. Short sentences, active voice, second person.
   "We split your budget" rather than "the budget is divided".
 - **Banned words**: *derived*, *randomised*, *comprehensive*, *utilize*. Use
@@ -658,7 +658,7 @@ the three FAQ answers in the `FAQPage` block.
 ## Conventions for upcoming phases
 
 1. Keep every selector inside `.rt-calc`; prefix classes with `rt-`.
-2. One module per step — mount into `#rt-slot-*` rather than editing sections.
+2. One module per step: mount into `#rt-slot-*` rather than editing sections.
 3. No global resets (`body`, `h1`, `*`) and no `!important` outside the
    reduced-motion block.
 4. Enqueue CSS through WordPress (`wp_enqueue_style`) in dependency order:
@@ -674,16 +674,16 @@ python3 -m http.server 8000
 
 ## Next phases
 
-- Phase 2 — Step 1 input UI. ✅
-- Phase 3 — Step 1 JS: state, sync, exclusivity, height maths. ✅
-- Phase 4 — Step 2 engine: allocation, CPCH, posture risk. ✅
-- Phase 5 — Step 2 progress-bar UI. ✅
-- Phase 6 — Step 3 results, AEO box, gear shortlist. ✅
-- Phase 7 — SEO: JSON-LD, static fallbacks, methodology, WordPress guide. ✅
-- Phase 8 — Production packaging: single-file build, enqueue snippet, replacement guide. ✅
-- Phase 9 — Centralised affiliate database with link-integrity guard rails. ✅
-- Phase 10 — One link per product via Amazon OneLink; currency decoupled from URLs. ✅
-- Phase 11 — Human-sounding copywriting rewrite: plain English, zero dashes, friendly
+- Phase 2: Step 1 input UI. ✅
+- Phase 3: Step 1 JS: state, sync, exclusivity, height maths. ✅
+- Phase 4: Step 2 engine: allocation, CPCH, posture risk. ✅
+- Phase 5: Step 2 progress-bar UI. ✅
+- Phase 6: Step 3 results, AEO box, gear shortlist. ✅
+- Phase 7: SEO: JSON-LD, static fallbacks, methodology, WordPress guide. ✅
+- Phase 8: Production packaging: single-file build, enqueue snippet, replacement guide. ✅
+- Phase 9: Centralised affiliate database with link-integrity guard rails. ✅
+- Phase 10: One link per product via Amazon OneLink; currency decoupled from URLs. ✅
+- Phase 11: Human-sounding copywriting rewrite: plain English, zero dashes, friendly
   disclaimers, simplified methodology. ✅
-- Phase 8 (optional) — PHP shortcode/block package with server-side rendering of the
+- Phase 8 (optional): PHP shortcode/block package with server-side rendering of the
   personalised answer, so crawlers see the calculated result and not just the fallback.

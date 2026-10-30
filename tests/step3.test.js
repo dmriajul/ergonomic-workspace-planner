@@ -1,5 +1,5 @@
 /**
- * tests/step3.test.js — AEO answer box, gear shortlist, reveal flow
+ * tests/step3.test.js: AEO answer box, gear shortlist, reveal flow
  * ---------------------------------------------------------------------------
  * Boots the real index.html in jsdom and drives the widget the way a user does:
  * fill in the profile, press "Calculate my plan", inspect the answer + cards.
@@ -349,6 +349,6 @@ const fillValid = (doc, fire, w) => {
   ok(survived, 'missing Step 3 markup does not throw');
   ok(w2.RT_Calculator.getState().budget === 1000, 'widget still initialises');
 
-  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
+  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
 })();

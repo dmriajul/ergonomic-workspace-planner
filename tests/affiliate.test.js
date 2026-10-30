@@ -1,5 +1,5 @@
 /**
- * tests/affiliate.test.js — the centralised affiliate database
+ * tests/affiliate.test.js: the centralised affiliate database
  * ---------------------------------------------------------------------------
  * This suite exists to protect the site owner while bulk-editing links. A typo
  * in one of the 9 URLs is hard to spot by eye and impossible to notice until a
@@ -8,7 +8,7 @@
  *   • a single link per product (no USD / GBP / CAD variants)
  *   • a full https:// URL on amzn.to or an amazon.* storefront
  *   • an associate tag when a full amazon.* product URL is used
- *   • a numeric price and a 0–5 rating
+ *   • a numeric price and a 0 to 5 rating
  *
  * It also proves the runtime path: allocation -> tier -> that product's link,
  * and that switching currency changes the money formatting WITHOUT touching
@@ -135,7 +135,7 @@ const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url
     if (typeof p.name !== 'string' || !p.name.trim()) badNames.push(`${cat}.${tier}`);
   }));
   ok(badPrices.length === 0, 'every price is a positive number (no currency symbols)', badPrices);
-  ok(badRatings.length === 0, 'every rating is 0–5', badRatings);
+  ok(badRatings.length === 0, 'every rating is 0 to 5', badRatings);
   ok(badNames.length === 0, 'every product has a name', badNames);
   ok(DB.chair.budget.price < DB.chair.mid.price &&
      DB.chair.mid.price < DB.chair.premium.price,
@@ -145,7 +145,7 @@ const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url
   console.log('\n3. Auto-detect: allocation picks the tier');
   const tierFor = amount => RT.selectProductTier(amount).key;
   ok(tierFor(0) === 'budget' && tierFor(249) === 'budget', 'under 250 -> budget');
-  ok(tierFor(250) === 'mid' && tierFor(700) === 'mid', '250–700 -> mid');
+  ok(tierFor(250) === 'mid' && tierFor(700) === 'mid', '250 to 700 -> mid');
   ok(tierFor(701) === 'premium' && tierFor(99999) === 'premium', 'above 700 -> premium');
   TIERS.forEach(tier => {
     ok(DB.chair[tier] !== undefined, `tier "${tier}" is addressable in the DB`);
@@ -176,7 +176,7 @@ const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url
   RT.updateStep2UI();
   RT.calculatePlan();
   ok(href() === 'https://www.amazon.com/dp/TESTONLY?tag=test-20',
-     'editing the object is enough — no code change needed', href());
+     'editing the object is enough, no code change needed', href());
   DB.chair[expectedTier].link = original;
   RT.calculatePlan();
 
@@ -249,6 +249,6 @@ const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url
      'the affiliate database holds no presentation metadata');
   ok(RT.version === '0.10.0', 'version bumped to 0.10.0', RT.version);
 
-  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
+  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
 })();
