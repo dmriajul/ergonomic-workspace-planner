@@ -65,6 +65,31 @@
   --rt-border: rgba(148, 163, 184, 0.14);
   --rt-border-strong: rgba(148, 163, 184, 0.28);
 
+  /* ---- Form fields (Phase 12) --------------------------------------------
+     WordPress themes style `input` and `select` globally and usually win over
+     a plugin's class-only rules. These semantic tokens give the override layer
+     in rt-calc.css one place to read its colours from, so a theme cannot make
+     a field white by changing the surface palette. */
+  /* The step card sits on --rt-surface (#1e293b), so the fields keep the darker
+     well from the approved design (--rt-bg, #0f172a): 1.22:1 against the card
+     plus a 3.45:1 border reads as an inset control. Swap this single line to
+     var(--rt-surface) if you would rather have fields flush with the card. */
+  --rt-field-bg: var(--rt-bg);               /* #0f172a */
+  --rt-field-bg-hover: var(--rt-surface-raised);
+  --rt-field-text: #ffffff;
+  /* 0.62 alpha composites to roughly 3:1 against --rt-field-bg, which is the
+     WCAG 1.4.11 minimum for a control boundary. A theme border at 0.28 reads as
+     "no border at all" on a dark card. */
+  --rt-field-border: rgba(148, 163, 184, 0.62);
+  --rt-field-border-hover: rgba(148, 163, 184, 0.85);
+  --rt-field-placeholder: #94a3b8;           /* readable light grey */
+  --rt-field-option-bg: var(--rt-surface);   /* native dropdown list */
+  --rt-field-option-checked: var(--rt-accent-strong);
+  /* Bright indigo at 0.85 alpha composites to about 4:1 against --rt-field-bg,
+     so the focus glow is visible on a dark card rather than a faint smudge. */
+  --rt-focus-ring: rgba(129, 140, 248, 0.85);
+  --rt-focus-ring-width: 3px;
+
   /* ---- Text -------------------------------------------------------------- */
   --rt-text: #e8eef9;
   --rt-text-muted: #94a3b8;
@@ -2006,6 +2031,218 @@
 
   .rt-methodology__disclaimers {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ==========================================================================
+   14. THEME OVERRIDE HARDENING (form fields)
+   --------------------------------------------------------------------------
+   WordPress themes (GeneratePress included) ship global `input`, `select` and
+   `textarea` rules with a white background and dark text. A plugin class alone
+   loses to them whenever the theme rule is more specific or loads later, which
+   is exactly what happened on the live site: invisible placeholder text in the
+   dropdowns and a white box around the budget number.
+
+   This layer is the last thing in the file and it always uses !important, so
+   it wins no matter what the theme does. The trade-off is deliberate: these are
+   our own fields, inside our own widget, and a theme has no business styling
+   them. Everything stays scoped to .rt-calc, so nothing here can reach the rest
+   of the page. Colours come from the Phase 12 field tokens in rt-tokens.css.
+   ========================================================================== */
+
+/* ---- 14.1 Shared field chrome: .rt-select and .rt-input ------------------ */
+
+/* Two classes plus the real DOM wrapper (three) so that even a theme rule
+   carrying its own !important and a wrapper class, for example
+   `.site-content input[type="number"]`, loses on specificity. */
+.rt-calc .rt-select,
+.rt-calc .rt-input,
+.rt-calc .rt-select-wrap .rt-select,
+.rt-calc .rt-input-group .rt-input {
+  /* Surfaces: kill the theme's white box, gradient and inner shadow. */
+  background-color: var(--rt-field-bg) !important;
+  background-image: none !important;
+  color: var(--rt-field-text) !important;
+  /* WebKit paints form text with -webkit-text-fill-color, which ignores
+     `color`, so it must be set explicitly or iOS Safari stays dark-on-dark. */
+  -webkit-text-fill-color: var(--rt-field-text) !important;
+  border: var(--rt-border-width) solid var(--rt-field-border) !important;
+  border-radius: var(--rt-radius-sm) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  outline: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  /* Native widgets look like the dark palette, and the caret stays visible. */
+  color-scheme: dark !important;
+  caret-color: var(--rt-field-text) !important;
+  /* A theme's content-box would resize the whole grid. */
+  box-sizing: border-box !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* ---- 14.2 Select dropdowns ----------------------------------------------- */
+
+.rt-calc .rt-select {
+  cursor: pointer !important;
+  /* Restore the layout metrics a theme's `padding` / `font-size` can wreck. */
+  width: 100% !important;
+  min-height: 2.75rem !important;
+  padding: var(--rt-space-2) 2.5rem var(--rt-space-2) var(--rt-space-3) !important;
+  font-family: var(--rt-font-sans) !important;
+  font-size: var(--rt-text-base) !important;
+  font-weight: var(--rt-weight-regular) !important;
+  line-height: var(--rt-leading-snug) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.rt-calc .rt-select:hover {
+  background-color: var(--rt-field-bg-hover) !important;
+  border-color: var(--rt-field-border-hover) !important;
+}
+
+/* The unselected state carries the "Select your height" prompt, so it has to
+   read as a placeholder: light grey, never the theme's dark text. */
+.rt-calc .rt-select:has(option[value=""]:checked) {
+  color: var(--rt-field-placeholder) !important;
+  -webkit-text-fill-color: var(--rt-field-placeholder) !important;
+}
+
+/* Native dropdown list, Chrome / Edge / Firefox. Without this the open list is
+   white text on a white popup, which is the classic dark-mode failure. */
+.rt-calc .rt-select option,
+.rt-calc .rt-select optgroup {
+  background-color: var(--rt-field-option-bg) !important;
+  color: var(--rt-field-text) !important;
+  -webkit-text-fill-color: var(--rt-field-text) !important;
+  font-family: var(--rt-font-sans) !important;
+  font-size: var(--rt-text-base) !important;
+}
+
+/* The accent highlight is for a real choice. It must skip the disabled
+   "Select your height" prompt: grey on indigo would drop to 2.4:1, while white on
+   the accent is 6.3:1. */
+.rt-calc .rt-select option:checked:not(:disabled),
+.rt-calc .rt-select option:hover,
+.rt-calc .rt-select option:focus {
+  background-color: var(--rt-field-option-checked) !important;
+  color: var(--rt-field-text) !important;
+  -webkit-text-fill-color: var(--rt-field-text) !important;
+}
+
+.rt-calc .rt-select option:disabled {
+  color: var(--rt-field-placeholder) !important;
+  -webkit-text-fill-color: var(--rt-field-placeholder) !important;
+  opacity: 1 !important;
+}
+
+/* ---- 14.3 Budget number input -------------------------------------------- */
+
+.rt-calc .rt-input {
+  background-color: var(--rt-field-bg) !important;
+  width: 100% !important;
+  min-height: 2.75rem !important;
+  padding: var(--rt-space-2) var(--rt-space-3) !important;
+  font-family: var(--rt-font-mono) !important;
+  font-size: var(--rt-text-md) !important;
+  font-weight: var(--rt-weight-medium) !important;
+  font-variant-numeric: tabular-nums !important;
+  text-align: right !important;
+}
+
+/* The currency prefix is absolutely positioned, so the text must clear it. This
+   is more specific than the rule above, so it keeps the larger left inset. */
+.rt-calc .rt-input-group .rt-input {
+  padding-left: 2.6rem !important;
+}
+
+.rt-calc .rt-input:hover {
+  border-color: var(--rt-field-border-hover) !important;
+}
+
+/* Themes sometimes force a white field on :focus or :focus-within. */
+.rt-calc .rt-input:focus,
+.rt-calc .rt-input:focus-within {
+  background-color: var(--rt-field-bg) !important;
+}
+
+/* Chrome autofill ignores `background-color` and repaints the field an opaque
+   pale yellow / white. An inset shadow the height of the box is the only
+   reliable fix, and it keeps the dark surface. */
+.rt-calc .rt-input:-webkit-autofill,
+.rt-calc .rt-input:-webkit-autofill:hover,
+.rt-calc .rt-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--rt-field-text) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--rt-field-bg) inset !important;
+  caret-color: var(--rt-field-text) !important;
+  transition: background-color 600000s ease-in-out 0s !important;
+}
+
+/* ---- 14.4 Placeholders --------------------------------------------------- */
+
+.rt-calc .rt-input::placeholder {
+  color: var(--rt-field-placeholder) !important;
+  opacity: 1 !important;
+}
+
+.rt-calc .rt-input::-webkit-input-placeholder {
+  color: var(--rt-field-placeholder) !important;
+  opacity: 1 !important;
+}
+
+.rt-calc .rt-input:-ms-input-placeholder {
+  color: var(--rt-field-placeholder) !important;
+}
+
+/* ---- 14.5 Focus states --------------------------------------------------- */
+
+/* A theme's `outline: 0` plus its own box-shadow is the usual reason a field
+   looks unfocused. Both are reset here, then the accent ring is painted with
+   the ring token so it reads clearly on the dark surface. */
+.rt-calc .rt-select:focus,
+.rt-calc .rt-select:focus-visible,
+.rt-calc .rt-input:focus,
+.rt-calc .rt-input:focus-visible,
+.rt-calc .rt-select-wrap .rt-select:focus,
+.rt-calc .rt-select-wrap .rt-select:focus-visible,
+.rt-calc .rt-input-group .rt-input:focus,
+.rt-calc .rt-input-group .rt-input:focus-visible {
+  background-color: var(--rt-field-bg) !important;
+  color: var(--rt-field-text) !important;
+  -webkit-text-fill-color: var(--rt-field-text) !important;
+  border-color: var(--rt-accent) !important;
+  box-shadow: 0 0 0 var(--rt-focus-ring-width) var(--rt-focus-ring) !important;
+  outline: none !important;
+}
+
+/* Keyboard users get a second, tighter ring so the two modes differ. */
+.rt-calc .rt-select:focus-visible,
+.rt-calc .rt-input:focus-visible,
+.rt-calc .rt-select-wrap .rt-select:focus-visible,
+.rt-calc .rt-input-group .rt-input:focus-visible {
+  box-shadow: 0 0 0 var(--rt-focus-ring-width) var(--rt-focus-ring),
+    0 0 0 1px var(--rt-accent) inset !important;
+}
+
+/* Disabled fields keep their contrast instead of fading into the background. */
+.rt-calc .rt-select:disabled,
+.rt-calc .rt-input:disabled,
+.rt-calc .rt-select-wrap .rt-select:disabled,
+.rt-calc .rt-input-group .rt-input:disabled {
+  background-color: var(--rt-surface-sunken) !important;
+  color: var(--rt-field-placeholder) !important;
+  -webkit-text-fill-color: var(--rt-field-placeholder) !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+/* ---- 14.6 Reduced motion keeps the ring, drops the transition ------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .rt-calc .rt-select,
+  .rt-calc .rt-input {
+    transition: none !important;
   }
 }
   </style>
@@ -4637,7 +4874,7 @@
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.10.0";
+  RT_Calculator.version = "0.11.0";
   RT_Calculator.getState = getState;
 
   // Step 1

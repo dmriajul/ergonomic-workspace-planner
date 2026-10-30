@@ -1916,7 +1916,7 @@
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.10.0";
+  RT_Calculator.version = "0.11.0";
   RT_Calculator.getState = getState;
 
   // Step 1

@@ -169,7 +169,7 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
   const w = runDom.window, d = w.document;
   const RT = w.RT_Calculator;
   ok(typeof RT === 'object', 'RT_Calculator boots from the inlined script');
-  ok(RT.version === '0.10.0', 'version 0.10.0', RT.version);
+  ok(RT.version === '0.11.0', 'version 0.11.0', RT.version);
   ok(RT.getState().budget === 1000 && RT.getState().currency === 'USD',
      'default state correct', RT.getState());
 

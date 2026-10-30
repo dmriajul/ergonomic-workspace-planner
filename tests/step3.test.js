@@ -334,7 +334,7 @@ const fillValid = (doc, fire, w) => {
      'exactly 9 single affiliate URLs (one per product)',
      (code.match(/https:\/\/amzn\.to\//g) || []).length);
   ok(!/links\.(USD|GBP|CAD)/.test(code), 'no per-currency link lookups remain');
-  ok(RT.version === '0.10.0', 'version bumped to 0.10.0', RT.version);
+  ok(RT.version === '0.11.0', 'version bumped to 0.11.0', RT.version);
 
   /* ================= 11. Degrades without Step 3 markup ================= */
   console.log('\n11. Robustness');
