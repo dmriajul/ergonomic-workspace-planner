@@ -417,10 +417,11 @@ npm i --no-save jsdom csstree-validator
 node tests/step1.test.js     #  98 assertions
 node tests/step2.test.js     # 100 assertions
 node tests/step2-ui.test.js  #  67 assertions
-node tests/step3.test.js     #  90 assertions
+node tests/step3.test.js     #  92 assertions
 node tests/seo.test.js       #  86 assertions
 node tests/build.test.js     #  67 assertions
 node tests/affiliate.test.js #  51 assertions
+node tests/theme-override.test.js # 145 assertions
 ```
 
 `step1`: state defaults, slider↔input sync, mid-typing guard, snapping, all three
@@ -435,6 +436,13 @@ every chair-tier boundary, risk bands, `computeStep2` aggregation, and reactive
 reconciliation, reactive updates from budget/pain/hours changes, currency reformatting
 (£ and C$), tier boundaries, extremes, a 120-case fuzz asserting percentages total 100
 and amounts total the budget, and graceful degradation when the panel is absent.
+
+`theme-override`: the Phase 12 hardening layer. It parses both stylesheets and asserts
+that every forced property on `.rt-select` / `.rt-input` carries `!important`, that the
+open dropdown list and the placeholder states use the dark tokens, that the autofill
+repaint is present, that every selector in the layer starts with `.rt-` and outranks a
+bare element rule, and it computes WCAG contrast ratios for white text, the placeholder
+grey, the field border and the focus ring.
 
 ## SEO & crawler readiness
 
@@ -655,12 +663,85 @@ matter so the tone cannot drift:
 The same rules apply to the dynamically generated AEO answer in `buildAEOText()` and to
 the three FAQ answers in the `FAQPage` block.
 
+## Theme compatibility: dark-mode form fields (Phase 12)
+
+The widget is deployed on a GeneratePress site, where WordPress themes style every
+`input` and `select` on the page. Three things broke in production:
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Dropdown text invisible | Theme set `color` dark on the select, over our `var(--rt-text)` | `color` and `-webkit-text-fill-color` forced to `#ffffff` |
+| White box around the budget amount | Theme's `input[type=number] { background: #fff }` outranked our class | `background-color` forced to `var(--rt-field-bg)` |
+| White popup when a dropdown opened | `<option>` was never styled against the theme | `option` / `optgroup` background and colour forced |
+
+Section 14 of `rt-calc.css` is the answer. It is the last block in the file, every
+declaration in it is `!important`, and its selectors carry two classes plus the real
+DOM wrapper (`.rt-calc .rt-input-group .rt-input`), which outranks a theme rule such as
+`.site-content input[type=number]` even when the theme also uses `!important`.
+
+### What the layer covers
+
+- **Shared chrome**: background, background image, text colour, text fill colour,
+  border, radius, box shadow, opacity, outline, text shadow, filter, `color-scheme`,
+  caret colour, `box-sizing` and `appearance`.
+- **Layout guards**: width, min height, padding, font family, size and weight, so a
+  theme's `font-size: 16px` or `padding: 10px` cannot resize the grid.
+- **Open dropdown list**: dark `option` background, white text, accent highlight for
+  the checked option, and a disabled prompt option that is not faded away.
+- **Placeholder state**: an unselected `<select>` reads as `#94a3b8`, and
+  `::placeholder` is pinned to the same grey with `opacity: 1` (Firefox otherwise
+  applies 0.54).
+- **Autofill**: Chrome repaints fields pale yellow and ignores `background-color`, so an
+  inset shadow in the field colour is applied over the whole box.
+- **Focus**: the accent border plus a `3px` ring from `--rt-focus-ring`, with a second
+  tighter ring for `:focus-visible`. The theme's `outline` and `box-shadow` are reset
+  first, so the ring cannot be hidden behind them.
+
+### Contrast
+
+Every value in the layer is measured in `tests/theme-override.test.js`:
+
+| Pair | Ratio | Requirement |
+| --- | --- | --- |
+| `#ffffff` on the field surface `#0f172a` | 17.85:1 | AAA (7:1) |
+| `#94a3b8` placeholder on `#0f172a` | 6.96:1 | AA (4.5:1) |
+| Field border over `#0f172a` | 3.45:1 | Non-text 3:1 |
+| Focus ring over `#0f172a` | 4.65:1 | Non-text 3:1 |
+| Field surface against the card `#1e293b` | 1.22:1 | Visible as a well, not a flat patch |
+
+The card behind the fields is `--rt-surface` (`#1e293b`), so the field keeps the darker
+`--rt-bg` (`#0f172a`) well from the approved design rather than matching the card and
+disappearing behind its own border. To flatten them, change the one `--rt-field-bg` line
+in `rt-tokens.css` to `var(--rt-surface)`.
+
+### Tokens added to `rt-tokens.css`
+
+`--rt-field-bg`, `--rt-field-bg-hover`, `--rt-field-text`, `--rt-field-border`,
+`--rt-field-border-hover`, `--rt-field-placeholder`, `--rt-field-option-bg`,
+`--rt-field-option-checked`, `--rt-focus-ring`, `--rt-focus-ring-width`. They are
+declared on `.rt-calc, .rt-methodology` like every other token, so a theme still cannot
+reach them and `:root` stays untouched.
+
+### Verifying on the live site
+
+1. Bump the enqueue version (currently `0.11.0` in both `wordpress/functions-snippet.php`
+   and the embed guide in `index.html`) so browsers fetch the new CSS. A stale
+   `rt-calc.css` in the cache is the most common reason a fix "does not work".
+2. Hard reload the page and open Step 1.
+3. Check the three dropdowns, the open dropdown list, the budget number field and its
+   focus ring. Everything should read as dark mode, with no white rectangles.
+
+`tests/build.test.js` fails if `wordpress/single-file.html` is not rebuilt after a CSS
+change, so the artefact always matches the sources.
+
 ## Conventions for upcoming phases
 
 1. Keep every selector inside `.rt-calc`; prefix classes with `rt-`.
 2. One module per step: mount into `#rt-slot-*` rather than editing sections.
-3. No global resets (`body`, `h1`, `*`) and no `!important` outside the
-   reduced-motion block.
+3. No global resets (`body`, `h1`, `*`). `!important` is allowed in exactly two
+   places: the reduced-motion block, and section 14 of `rt-calc.css` (theme
+   override hardening). Anywhere else it means the cascade is being fought
+   rather than understood.
 4. Enqueue CSS through WordPress (`wp_enqueue_style`) in dependency order:
    `rt-tokens` → `rt-calc` → module styles.
 
@@ -685,5 +766,7 @@ python3 -m http.server 8000
 - Phase 10: One link per product via Amazon OneLink; currency decoupled from URLs. ✅
 - Phase 11: Human-sounding copywriting rewrite: plain English, zero dashes, friendly
   disclaimers, simplified methodology. ✅
+- Phase 12: Dark-mode hardening for live WordPress themes: forced field surfaces,
+  readable placeholder text, dark dropdown lists, visible borders and focus rings. ✅
 - Phase 8 (optional): PHP shortcode/block package with server-side rendering of the
   personalised answer, so crawlers see the calculated result and not just the fallback.

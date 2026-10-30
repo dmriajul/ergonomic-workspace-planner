@@ -247,7 +247,7 @@ const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url
      'icons/labels live in CATEGORY_META, outside the DB');
   ok(!('icon' in DB.chair) && !('label' in DB.chair),
      'the affiliate database holds no presentation metadata');
-  ok(RT.version === '0.10.0', 'version bumped to 0.10.0', RT.version);
+  ok(RT.version === '0.11.0', 'version bumped to 0.11.0', RT.version);
 
   console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);

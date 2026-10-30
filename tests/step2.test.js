@@ -331,7 +331,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
     const body = code.slice(start, start + 1400);
     return !/document\.|querySelector|\.style\./.test(body);
   }), 'core functions are DOM-free (pure)');
-  ok(RT.version === '0.10.0', 'version bumped to 0.10.0', RT.version);
+  ok(RT.version === '0.11.0', 'version bumped to 0.11.0', RT.version);
   ok(RT.debug === true, 'debug flag is opt-in and readable', RT.debug);
 
   console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
