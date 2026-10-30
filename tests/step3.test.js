@@ -234,16 +234,16 @@ const fillValid = (doc, fire, w) => {
   ok($$('#rt-product-list .rt-product').length === 3, 're-renders replace rather than append',
      $$('#rt-product-list .rt-product').length);
 
-  /* ================= 6. Currency drives links + prices ================= */
-  console.log('\n6. Currency: prices and regional links');
+  /* ================= 6. Currency drives prices, not links ================= */
+  console.log('\n6. Currency: prices reformat, affiliate link is fixed');
+  const linkBeforeCurrency = chairCard().querySelector('.rt-product__cta').getAttribute('href');
   const gbp = $('#rt-cur-gbp');
   gbp.checked = true; $('#rt-cur-usd').checked = false; fire(gbp, 'change');
   ok(chairCard().querySelector('.rt-product__price').textContent.startsWith('£'),
      'prices reformat to £', chairCard().querySelector('.rt-product__price').textContent);
-  ok(/amazon\.co\.uk/.test(chairCard().querySelector('.rt-product__cta').getAttribute('href')),
-     'GBP uses the UK storefront link', chairCard().querySelector('.rt-product__cta').getAttribute('href'));
-  ok(/tag=riajultech-21/.test(chairCard().querySelector('.rt-product__cta').getAttribute('href')),
-     'GBP link carries the UK associate tag');
+  ok(chairCard().querySelector('.rt-product__cta').getAttribute('href') === linkBeforeCurrency,
+     'GBP leaves the affiliate link unchanged (OneLink resolves the region)',
+     chairCard().querySelector('.rt-product__cta').getAttribute('href'));
   ok($('#rt-aeo-answer-text').textContent.includes('£'),
      'AEO prose reformats to £ too');
 
@@ -251,18 +251,21 @@ const fillValid = (doc, fire, w) => {
   cad.checked = true; gbp.checked = false; fire(cad, 'change');
   ok(chairCard().querySelector('.rt-product__price').textContent.startsWith('C$'),
      'prices reformat to C$', chairCard().querySelector('.rt-product__price').textContent);
-  ok(/amazon\.ca/.test(chairCard().querySelector('.rt-product__cta').getAttribute('href')),
-     'CAD uses the CA storefront link', chairCard().querySelector('.rt-product__cta').getAttribute('href'));
+  ok(chairCard().querySelector('.rt-product__cta').getAttribute('href') === linkBeforeCurrency,
+     'CAD leaves the affiliate link unchanged',
+     chairCard().querySelector('.rt-product__cta').getAttribute('href'));
 
   const usd = $('#rt-cur-usd');
   usd.checked = true; cad.checked = false; fire(usd, 'change');
-  ok(/amazon\.com\/dp\//.test(chairCard().querySelector('.rt-product__cta').getAttribute('href')),
-     'USD uses the US storefront link', chairCard().querySelector('.rt-product__cta').getAttribute('href'));
+  ok(chairCard().querySelector('.rt-product__cta').getAttribute('href') === linkBeforeCurrency,
+     'USD leaves the affiliate link unchanged',
+     chairCard().querySelector('.rt-product__cta').getAttribute('href'));
 
   console.log('\n6b. Database shape');
-  ok(RT.affiliateLinks.chair.budget.links.GBP.indexOf('amazon.co.uk') !== -1,
-     'catalogue ships all three regional links (no wrapper level)',
-     RT.affiliateLinks.chair.budget.links.GBP);
+  ok(typeof RT.affiliateLinks.chair.budget.link === 'string',
+     'each product carries ONE link', RT.affiliateLinks.chair.budget.link);
+  ok(!('links' in RT.affiliateLinks.chair.budget),
+     'no per-currency .links object remains');
   ok(RT.products === RT.affiliateLinks, 'legacy .products alias still points at the DB');
 
   /* ================= 7. Disclosure ================= */
@@ -325,11 +328,11 @@ const fillValid = (doc, fire, w) => {
      'no HTML-string injection anywhere');
   ok(!/api[_-]?key|secret|password|access[_-]?token/i.test(code),
      'no credentials in the bundle');
-  ok((code.match(/https:\/\/www\.amazon\./g) || []).length === 27,
-     'exactly 27 regional product URLs, all full https:// links',
-     (code.match(/https:\/\/www\.amazon\./g) || []).length);
-  ok(!/https:\/\/amzn\.to/.test(code), 'no bare amzn.to short links remain');
-  ok(RT.version === '0.8.0', 'version bumped to 0.8.0', RT.version);
+  ok((code.match(/https:\/\/amzn\.to\//g) || []).length === 9,
+     'exactly 9 single affiliate URLs (one per product)',
+     (code.match(/https:\/\/amzn\.to\//g) || []).length);
+  ok(!/links\.(USD|GBP|CAD)/.test(code), 'no per-currency link lookups remain');
+  ok(RT.version === '0.9.0', 'version bumped to 0.9.0', RT.version);
 
   /* ================= 11. Degrades without Step 3 markup ================= */
   console.log('\n11. Robustness');

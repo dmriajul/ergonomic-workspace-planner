@@ -13,7 +13,7 @@
 
   BEFORE YOU PUBLISH
   ---------------------------------------------------------------------------
-  • Replace the 27 placeholder Amazon links — see wordpress/REPLACE-THIS.md.
+  • Replace the 9 placeholder Amazon links — see wordpress/REPLACE-THIS.md.
   • Add the canonical URL to the page (WordPress normally sets it; if you use
     an SEO plugin, set it there rather than pasting a <link> in this block).
   • Do NOT include the JSON-LD blocks from index.html inside this block: put
@@ -2751,7 +2751,8 @@
  *  .checkPlanReadiness(state?)     → { ready, missing[] }
  *  .renderProducts(result, listEl) → renders cards, returns count
  *  .calculatePlan()                → reveals + paints Step 3, emits rt:planready
- *  .products                       → the mock affiliate catalogue
+ *  .affiliateLinks                 → the single-link affiliate database
+ *  .products                       → deprecated alias of .affiliateLinks
  *
  *  .init()                         → idempotent manual (re)initialisation
  *  .version
@@ -2807,37 +2808,68 @@
        • Add or remove tiers only together with PRODUCT_TIERS below.
      ========================================================================== */
 
+  /* ==========================================================================
+     ======================================================================
+     🚨 RIAJUL'S AFFILIATE DATABASE 🚨
+     PASTE ALL YOUR AMAZON LINKS HERE
+     ======================================================================
+     ----------------------------------------------------------------------
+     EVERY product link on the site comes from this one object. Nothing else
+     in this file hardcodes an affiliate URL, so this is the only place you
+     need to edit to swap products or links.
+
+     ONE LINK PER PRODUCT — 9 links in total.
+     Amazon OneLink (or any geo-redirecting short link) sends each visitor to
+     their local storefront, so there is no USD / GBP / CAD variant to
+     maintain. The currency toggle still changes how PRICES and BUDGETS are
+     formatted; it does not change the URL.
+
+     STRUCTURE — exactly three levels:
+
+       RT_AFFILIATE_LINKS
+         └── category   "chair" | "desk" | "monitor"
+               └── tier   "budget" | "mid" | "premium"
+                     ├── name    display name on the card
+                     ├── price   NUMBER only, no symbol or comma
+                     ├── rating  0–5, one decimal
+                     └── link    ONE full URL (https://amzn.to/... or https://www.amazon.tld/dp/...?tag=...)
+
+     HOW A LINK IS CHOSEN AT RUNTIME (automatic):
+       1. The money allocated to the category picks the tier:
+            under 250        → budget
+            250 up to 700    → mid
+            above 700        → premium
+       2. The URL is read straight from [category][tier].link.
+       No currency lookup happens, so all three currencies share one URL.
+
+     RULES WHEN EDITING
+       • Use a full URL beginning https:// (amzn.to short links are fine).
+       • One link per product — do not add USD / GBP / CAD variants back.
+       • If you paste a full amazon.* product URL, keep your ?tag= on it:
+         a link without your associate tag earns nothing.
+       • price must stay a number: 1599, not "$1,599".
+       • Add or remove tiers only together with PRODUCT_TIERS below.
+     ========================================================================== */
+
   var RT_AFFILIATE_LINKS = {
     chair: {
       budget: {
         name: "ErgoBudget Mesh Chair",
         price: 150,
         rating: 4.3,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1CHAIR1?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1CHAIR1?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1CHAIR1?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaChr01"
       },
       mid: {
         name: "Herman Miller Sayl",
         price: 450,
         rating: 4.6,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1CHAIR2?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1CHAIR2?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1CHAIR2?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaChr02"
       },
       premium: {
         name: "Steelcase Gesture",
         price: 1200,
         rating: 4.8,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1CHAIR3?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1CHAIR3?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1CHAIR3?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaChr03"
       }
     },
     desk: {
@@ -2845,31 +2877,19 @@
         name: "FlexiSpot E1 Standing Desk",
         price: 220,
         rating: 4.4,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1DESK001?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1DESK001?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1DESK001?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaDsk01"
       },
       mid: {
         name: "Uplift V2 Standing Desk",
         price: 600,
         rating: 4.7,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1DESK002?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1DESK002?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1DESK002?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaDsk02"
       },
       premium: {
         name: "Fully Jarvis Bamboo",
         price: 950,
         rating: 4.6,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1DESK003?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1DESK003?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1DESK003?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaDsk03"
       }
     },
     monitor: {
@@ -2877,31 +2897,19 @@
         name: "Dell P2422H 24\u2033",
         price: 180,
         rating: 4.5,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1MONIT01?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1MONIT01?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1MONIT01?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaMon01"
       },
       mid: {
         name: "LG 27UP850 4K 27\u2033",
         price: 500,
         rating: 4.6,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1MONIT02?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1MONIT02?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1MONIT02?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaMon02"
       },
       premium: {
         name: "Apple Studio Display 27\u2033",
         price: 1599,
         rating: 4.4,
-        links: {
-          USD: "https://www.amazon.com/dp/B0C1MONIT03?tag=riajultech-20",
-          GBP: "https://www.amazon.co.uk/dp/B0C1MONIT03?tag=riajultech-21",
-          CAD: "https://www.amazon.ca/dp/B0C1MONIT03?tag=riajultech-20"
-        }
+        link: "https://amzn.to/3RtaMon03"
       }
     }
   };
@@ -4278,10 +4286,26 @@
     return new Array(value + 1).join("\u2605") + new Array(6 - value).join("\u2606");
   }
 
-  /** Resolve the affiliate link for the active region, with a USD fallback. */
-  function resolveAffiliateLink(product, currency) {
-    if (!product || !product.links) return null;
-    return product.links[currency] || product.links.USD || null;
+  /**
+   * Read the single affiliate URL off a product.
+   *
+   * The currency is deliberately NOT a parameter: every product carries one
+   * link and Amazon OneLink (or an equivalent geo-redirect) resolves the
+   * visitor's local storefront. Currency still governs money formatting
+   * everywhere else.
+   *
+   * @param  {Object} product  { name, price, rating, link }
+   * @return {string|null}     the URL, or null when absent/blank
+   */
+  function resolveAffiliateLink(product) {
+    if (!product) return null;
+    var link = product.link;
+    if (typeof link !== "string") return null;
+    var trimmed = link.trim();
+    if (!trimmed) return null;
+    // Guard against a half-finished edit leaving a non-http link on a card.
+    if (!/^https?:\/\//i.test(trimmed)) return null;
+    return trimmed;
   }
 
   /**
@@ -4366,7 +4390,8 @@
     facts.appendChild(fit);
 
     /* CTA */
-    var href = resolveAffiliateLink(product, currency);
+    // One link per product — no currency lookup.
+    var href = resolveAffiliateLink(product);
     var cta = doc.createElement(href ? "a" : "span");
     cta.className = "rt-product__cta";
     if (href) {
@@ -4602,7 +4627,7 @@
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.8.0";
+  RT_Calculator.version = "0.9.0";
   RT_Calculator.getState = getState;
 
   // Step 1
