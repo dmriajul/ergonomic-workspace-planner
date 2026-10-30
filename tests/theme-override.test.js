@@ -432,11 +432,137 @@ const allDecls = selRe => {
   ok(/var\(--rt-surface-sunken\)/.test(disabledDecls['background-color'].value),
      'disabled fields use the sunken surface token');
 
+  console.log('\n5c. Slider: reachable, and impossible to flatten');
+  const rangeWrap = findRule(/^\.rt-calc \.rt-range-wrap$/);
+  ok(Boolean(rangeWrap), 'the slider wrapper is targeted too');
+  ['position', 'z-index', 'pointer-events'].forEach(prop => {
+    const decl = rangeWrap && parseDecls(rangeWrap.body)[prop];
+    ok(decl && decl.important, 'wrapper forces ' + prop, decl);
+  });
+  const rangeZ = rangeWrap && parseDecls(rangeWrap.body)['z-index'];
+  ok(rangeZ && Number(rangeZ.value) >= 99, 'the slider sits above theme overlays',
+     rangeZ && rangeZ.value);
+
+  const rangeBase = allDecls(/^\.rt-calc \.rt-range-wrap \.rt-range$/);
+  ['z-index', 'pointer-events', 'position', 'cursor', 'touch-action',
+   '-webkit-appearance', 'appearance', 'width'].forEach(prop => {
+    ok(rangeBase[prop] && rangeBase[prop].important,
+       '.rt-range forces ' + prop, rangeBase[prop]);
+  });
+  ok(/^99$/.test(rangeBase['z-index'].value), 'the control itself is at z-index 99',
+     rangeBase['z-index'].value);
+  ok(/^auto$/.test(rangeBase['pointer-events'].value),
+     'the control accepts pointer events', rangeBase['pointer-events'].value);
+  ok(/^none$/.test(rangeBase.appearance.value) &&
+     /^none$/.test(rangeBase['-webkit-appearance'].value),
+     'the native slider appearance is removed, so the custom thumb survives',
+     rangeBase.appearance.value);
+  ok(/transparent/.test(rangeBase.background.value),
+     'the element stays transparent; the track paints the colour',
+     rangeBase.background.value);
+
+  const webkitTrack = findRule(/::-webkit-slider-runnable-track$/);
+  ok(Boolean(webkitTrack), 'the WebKit track is forced');
+  const wt = webkitTrack ? parseDecls(webkitTrack.body) : {};
+  ['height', 'background-color', 'background-image', 'background-size', 'box-shadow']
+    .forEach(prop => {
+      ok(wt[prop] && wt[prop].important, 'WebKit track forces ' + prop, wt[prop]);
+    });
+  ok(/var\(--rt-range-fill\)/.test(wt['background-size'].value),
+     'the fill still tracks --rt-range-fill', wt['background-size'].value);
+
+  const webkitThumb = findRule(/::-webkit-slider-thumb$/);
+  ok(Boolean(webkitThumb), 'the WebKit thumb is forced');
+  const wh = webkitThumb ? parseDecls(webkitThumb.body) : {};
+  ['-webkit-appearance', 'width', 'height', 'background-color', 'border',
+   'border-radius', 'box-shadow'].forEach(prop => {
+    ok(wh[prop] && wh[prop].important, 'WebKit thumb forces ' + prop, wh[prop]);
+  });
+  ok(/^#fff$/i.test(wh['background-color'].value),
+     'the thumb stays white with an accent border', wh['background-color'].value);
+
+  ['::-moz-range-track', '::-moz-range-thumb', '::-moz-range-progress']
+    .forEach(pseudo => {
+      const rule = findRule(new RegExp(pseudo.replace(/[-]/g, '\\-') + '$'));
+      ok(Boolean(rule), 'Firefox ' + pseudo + ' is forced');
+      if (!rule) return;
+      const decls = parseDecls(rule.body);
+      ok(Object.keys(decls).length > 0 &&
+         Object.keys(decls).every(prop => decls[prop].important),
+         'every declaration in ' + pseudo + ' is !important', Object.keys(decls));
+    });
+
+  const rangeFocus = findRule(/^\.rt-calc \.rt-range-wrap \.rt-range:focus$/);
+  ok(rangeFocus && parseDecls(rangeFocus.body).outline.important,
+     'the strip does not paint a boxy outline around the whole slider');
+
+  console.log('\n5d. Methodology: readable on any page background');
+  const methodRoot = findRule(/^\.rt-methodology\[class\]$/);
+  ok(Boolean(methodRoot), '.rt-methodology is targeted with raised specificity');
+  const mr = methodRoot ? parseDecls(methodRoot.body) : {};
+  ok(mr['background-color'] && mr['background-color'].important &&
+     /var\(--rt-bg\)/.test(mr['background-color'].value),
+     'the section paints its own dark surface', mr['background-color']);
+  ok(mr.color && mr.color.important && /var\(--rt-text\)/.test(mr.color.value),
+     'the section states its own text colour', mr.color);
+
+  /* Every text-bearing selector inside the methodology must be covered, and
+     each one has to go through .rt-methodology__inner for specificity. */
+  const textTags = ['h1', 'h2', 'h3', 'h4', 'p', 'li', 'span', 'strong', 'em',
+                    'code', 'blockquote'];
+  const methodText = new Set(flatRules
+    .filter(r => /^\.rt-methodology \.rt-methodology__inner/.test(r.selector))
+    .map(r => r.selector));
+  textTags.forEach(tag => {
+    const sel = '.rt-methodology .rt-methodology__inner ' + tag;
+    ok(methodText.has(sel), 'methodology ' + tag + ' is colour-locked');
+  });
+  const lockRule = findRule(/^\.rt-methodology \.rt-methodology__inner p$/);
+  const lock = lockRule ? parseDecls(lockRule.body) : {};
+  ok(lock.color && lock.color.important &&
+     /var\(--rt-text\)/.test(lock.color.value),
+     'methodology paragraphs are forced to the light text token', lock.color);
+  ok(lock['-webkit-text-fill-color'] && lock['-webkit-text-fill-color'].important,
+     'and the WebKit text fill is forced too (theme link styles use it)');
+
+  const links = findRule(/^\.rt-methodology \.rt-methodology__inner a$/);
+  ok(links && parseDecls(links.body).color.important,
+     'links inside the methodology keep an accent colour');
+
+  /* Accents re-applied with higher specificity, otherwise the blanket rule
+     would flatten the design. */
+  [['eyebrow', '--rt-signal'], ['formula', '--rt-signal'], ['note', '--rt-text-muted']]
+    .forEach(([part, token]) => {
+      const rule = findRule(new RegExp('\\.rt-methodology__' + part + '$'));
+      ok(Boolean(rule), 'the ' + part + ' keeps its accent');
+      if (!rule) return;
+      const decl = parseDecls(rule.body).color;
+      ok(decl && decl.important && decl.value.includes(token),
+         'the ' + part + ' reads ' + token, decl);
+    });
+
+  ['card', 'standards', 'disclaimer'].forEach(part => {
+    const rule = findRule(new RegExp('\\.rt-methodology__' + part + '$'));
+    ok(rule && parseDecls(rule.body)['background-color'].important,
+       'the ' + part + ' panel keeps its own surface');
+  });
+
+  ok(contrast(resolve('--rt-text'), resolve('--rt-bg')) >= 7,
+     'methodology body text is AAA on its new surface',
+     contrast(resolve('--rt-text'), resolve('--rt-bg')).toFixed(2));
+  ok(luminance(resolve('--rt-bg')) < 0.02,
+     'the methodology surface is genuinely dark',
+     luminance(resolve('--rt-bg')).toFixed(4));
+
   console.log('\n6. Shipped single file');
   const single = fs.readFileSync(SINGLE, 'utf8');
   ok(single.includes('--rt-field-bg'), 'single file carries the field tokens');
   ok(single.includes('14. THEME OVERRIDE HARDENING'),
-     'single file carries the override layer');
+     'single file carries the field override layer');
+  ok(single.includes('15. THEME OVERRIDE HARDENING: the budget slider'),
+     'single file carries the slider override layer');
+  ok(single.includes('16. THEME OVERRIDE HARDENING: the methodology section'),
+     'single file carries the methodology override layer');
   ok(single.includes('.rt-calc .rt-select option'),
      'single file carries the option rule');
   ok(!/:root/.test(stripComments(single.slice(single.indexOf('<style>'),

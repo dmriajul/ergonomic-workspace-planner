@@ -56,6 +56,12 @@
 (function (window, document) {
   "use strict";
 
+  // Boot marker. If this line is missing from the browser console, the script
+  // never parsed: look for a typo, a stray quote or a smart quote in the
+  // affiliate database below. If it prints but the widget does nothing, the
+  // markup is missing or the script ran before the DOM was ready.
+  console.log("Calculator Loaded");
+
   /* ==========================================================================
      ======================================================================
      🚨 RIAJUL'S AFFILIATE DATABASE 🚨
@@ -106,10 +112,10 @@
      need to edit to swap products or links.
 
      ONE LINK PER PRODUCT: 9 links in total.
-     Amazon OneLink (or any geo-redirecting short link) sends each visitor to
-     their local storefront, so there is no USD / GBP / CAD variant to
-     maintain. The currency toggle still changes how PRICES and BUDGETS are
-     formatted; it does not change the URL.
+     Six are riajultech.com/recommends/ redirect links, which forward to the
+     merchant, and three point straight at the merchant store. Either way there
+     is no USD / GBP / CAD variant to maintain: the currency toggle still
+     changes how PRICES and BUDGETS are formatted, never the URL.
 
      STRUCTURE: exactly three levels:
 
@@ -119,7 +125,7 @@
                      ├── name    display name on the card
                      ├── price   NUMBER only, no symbol or comma
                      ├── rating  0 to 5, one decimal
-                     └── link    ONE full URL (https://amzn.to/... or https://www.amazon.tld/dp/...?tag=...)
+                     └── link    ONE full URL, https only
 
      HOW A LINK IS CHOSEN AT RUNTIME (automatic):
        1. The money allocated to the category picks the tier:
@@ -130,11 +136,13 @@
        No currency lookup happens, so all three currencies share one URL.
 
      RULES WHEN EDITING
-       • Use a full URL beginning https:// (amzn.to short links are fine).
+       • Use a full URL beginning https:// and keep the double quotes.
        • One link per product. Do not add USD / GBP / CAD variants back.
-       • If you paste a full amazon.* product URL, keep your ?tag= on it:
-         a link without your associate tag earns nothing.
+       • If you paste an amazon.* product URL, keep your ?tag= on it: a link
+         without your associate tag earns nothing.
        • price must stay a number: 1599, not "$1,599".
+       • rating is a number from 0 to 5, one decimal: 4.5, not "4.5 stars".
+       • Every entry ends with a comma except the last one in its category.
        • Add or remove tiers only together with PRODUCT_TIERS below.
      ========================================================================== */
 
@@ -144,19 +152,19 @@
         name: "ErgoBudget Mesh Chair",
         price: 150,
         rating: 4.3,
-        link: "https://amzn.to/3RtaChr01"
+        link: "https://riajultech.com/recommends/modway-articulate-ergonomic-mesh-office-chair/"
       },
       mid: {
         name: "Herman Miller Sayl",
         price: 450,
         rating: 4.6,
-        link: "https://amzn.to/3RtaChr02"
+        link: "https://riajultech.com/recommends/herman-miller-sayl-chair/"
       },
       premium: {
         name: "Steelcase Gesture",
         price: 1200,
         rating: 4.8,
-        link: "https://amzn.to/3RtaChr03"
+        link: "https://riajultech.com/recommends/steelcase-gesture-office-chair/"
       }
     },
     desk: {
@@ -164,19 +172,19 @@
         name: "FlexiSpot E1 Standing Desk",
         price: 220,
         rating: 4.4,
-        link: "https://amzn.to/3RtaDsk01"
+        link: "https://riajultech.com/recommends/flexispot-en1-one-piece-standing-desk/"
       },
       mid: {
         name: "Uplift V2 Standing Desk",
         price: 600,
         rating: 4.7,
-        link: "https://amzn.to/3RtaDsk02"
+        link: "https://www.upliftdesk.com/clearance-standing-desk"
       },
       premium: {
         name: "Fully Jarvis Bamboo",
         price: 950,
         rating: 4.6,
-        link: "https://amzn.to/3RtaDsk03"
+        link: "https://store.hermanmiller.com/standing-desks/jarvis-bamboo-standing-desk/2542428.html"
       }
     },
     monitor: {
@@ -184,19 +192,19 @@
         name: "Dell P2422H 24\u2033",
         price: 180,
         rating: 4.5,
-        link: "https://amzn.to/3RtaMon01"
+        link: "https://riajultech.com/recommends/dell-24-monitor/"
       },
       mid: {
         name: "LG 27UP850 4K 27\u2033",
         price: 500,
         rating: 4.6,
-        link: "https://amzn.to/3RtaMon02"
+        link: "https://riajultech.com/recommends/lg-27up850-w-monitor-27-uhd/"
       },
       premium: {
         name: "Apple Studio Display 27\u2033",
         price: 1599,
         rating: 4.4,
-        link: "https://amzn.to/3RtaMon03"
+        link: "https://riajultech.com/recommends/apple-studio-display/"
       }
     }
   };
@@ -493,7 +501,13 @@
       var opts = options || {};
       var configuration = cfg();
 
-      var next = clamp(value, configuration.min, configuration.max);
+      // A range or number control can hand back NaN or an empty string (some
+      // themes and browser extensions rewrite the value). Never let that reach
+      // state: keep the last good budget instead of freezing the widget.
+      var numeric = Number(value);
+      if (!isFinite(numeric)) return state.budget;
+
+      var next = clamp(numeric, configuration.min, configuration.max);
       if (opts.snap) {
         next = snapToStep(next, configuration.min, configuration.step);
         next = clamp(next, configuration.min, configuration.max);
@@ -550,7 +564,9 @@
 
     /* ---- slider → number input (fires continuously while dragging) ---- */
     range.addEventListener("input", function () {
-      commit(range.valueAsNumber, { snap: false, syncInput: true });
+      var live = range.valueAsNumber;
+      if (!isFinite(live)) live = Number(range.value);
+      commit(live, { snap: false, syncInput: true });
     });
 
     /* ---- number input → slider (live, but forgiving mid-typing) ---- */
@@ -1916,7 +1932,7 @@
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.11.0";
+  RT_Calculator.version = "0.12.0";
   RT_Calculator.getState = getState;
 
   // Step 1
@@ -1958,9 +1974,23 @@
   RT_Calculator.allocationBase = ALLOCATION_BASE;
   RT_Calculator.init = init;
 
+  /**
+   * Boot. `init()` is already defensive about missing markup, so a throw here
+   * means something genuinely unexpected (a half-pasted block, a theme script
+   * that replaced the DOM). Catch it, name it in the console, and leave the
+   * page usable instead of failing silently.
+   */
+  function boot() {
+    try {
+      init();
+    } catch (error) {
+      console.error("[RT] Calculator could not start:", error);
+    }
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", boot);
   } else {
-    init();
+    boot();
   }
 })(window, document);

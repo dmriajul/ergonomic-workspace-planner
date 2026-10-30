@@ -41,7 +41,7 @@ add_action( 'wp_enqueue_scripts', 'rt_calculator_assets' );
 
 function rt_calculator_assets() {
 	$base = get_stylesheet_directory_uri() . '/assets/rt-calculator';
-	$ver  = '0.11.0'; // bump on every change, it is the cache buster
+	$ver  = '0.12.0'; // bump on every change, it is the cache buster
 
 	wp_enqueue_style(
 		'rt-tokens',

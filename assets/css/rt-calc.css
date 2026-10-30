@@ -2052,3 +2052,289 @@
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   15. THEME OVERRIDE HARDENING: the budget slider
+   --------------------------------------------------------------------------
+   A themed `input[type="range"]` is the most fragile control on the page. Two
+   things break it:
+
+   1. The theme re-enables the native appearance (or paints its own track and
+      thumb), so our thumb vanishes into a white track. That looks like a frozen
+      slider even though the input still works.
+   2. Something in the theme's block wrapper sits on top of the control, so
+      clicks never reach it. `z-index` plus `pointer-events` fixes that, and it
+      is also why the whole strip gets `cursor: pointer`: the drag target has to
+      be the input itself.
+
+   The selectors are doubled up through `.rt-range-wrap`, which is the real
+   parent in the markup, so they outrank a theme's
+   `input[type="range"]::-webkit-slider-thumb` (element plus attribute) even
+   when the theme rule is later in the cascade.
+   ========================================================================== */
+
+/* ---- 15.1 The control itself --------------------------------------------- */
+
+.rt-calc .rt-range-wrap,
+.rt-calc .rt-range-wrap .rt-range,
+.rt-calc .rt-range {
+  position: relative !important;
+  /* Above a theme's decorative overlays, below our own step cards. */
+  z-index: 99 !important;
+  /* Nothing in the theme may swallow the click or the drag. */
+  pointer-events: auto !important;
+}
+
+.rt-calc .rt-range-wrap {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.rt-calc .rt-range-wrap .rt-range,
+.rt-calc .rt-range {
+  width: 100% !important;
+  height: 1.75rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* The track is drawn by the pseudo-elements below, never by the element. */
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  /* Touch drag on mobile, instead of the browser scrolling the page. */
+  touch-action: manipulation !important;
+  /* Without this the theme's native slider wins and our thumb is ignored. */
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  color-scheme: dark !important;
+  accent-color: var(--rt-accent) !important;
+}
+
+/* The strip never takes the focus ring: the thumb carries it. A theme's
+   `outline` on a full-bleed control reads as a bug. */
+.rt-calc .rt-range-wrap .rt-range:focus,
+.rt-calc .rt-range-wrap .rt-range:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ---- 15.2 WebKit / Blink track and thumb --------------------------------- */
+
+.rt-calc .rt-range-wrap .rt-range::-webkit-slider-runnable-track {
+  height: 0.5rem !important;
+  border: 0 !important;
+  border-radius: var(--rt-radius-pill) !important;
+  background-color: var(--rt-bg) !important;
+  background-image: linear-gradient(
+      90deg,
+      var(--rt-accent) 0%,
+      var(--rt-signal) 100%
+    ),
+    linear-gradient(var(--rt-bg), var(--rt-bg)) !important;
+  background-repeat: no-repeat !important;
+  background-size: var(--rt-range-fill) 100%, 100% 100% !important;
+  box-shadow: inset 0 0 0 1px var(--rt-border),
+    inset 0 1px 2px rgba(2, 6, 23, 0.7) !important;
+}
+
+.rt-calc .rt-range-wrap .rt-range::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 1.375rem !important;
+  height: 1.375rem !important;
+  /* (track 8px - thumb 22px) / 2 */
+  margin-top: -0.4375rem !important;
+  border-radius: 50% !important;
+  background-color: #fff !important;
+  background-image: none !important;
+  border: 3px solid var(--rt-accent) !important;
+  box-shadow: 0 2px 10px -2px rgba(2, 6, 23, 0.9) !important;
+  cursor: grab !important;
+  transition: box-shadow var(--rt-dur-fast) var(--rt-ease) !important;
+}
+
+.rt-calc .rt-range-wrap .rt-range:active::-webkit-slider-thumb {
+  cursor: grabbing !important;
+}
+
+.rt-calc .rt-range-wrap .rt-range:hover::-webkit-slider-thumb {
+  box-shadow: 0 2px 10px -2px rgba(2, 6, 23, 0.9),
+    0 0 0 6px var(--rt-accent-soft) !important;
+}
+
+.rt-calc .rt-range-wrap .rt-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--rt-signal) !important;
+  outline-offset: 3px !important;
+}
+
+/* ---- 15.3 Firefox track and thumb ---------------------------------------- */
+
+.rt-calc .rt-range-wrap .rt-range::-moz-range-track {
+  height: 0.5rem !important;
+  border: 0 !important;
+  border-radius: var(--rt-radius-pill) !important;
+  background-color: var(--rt-bg) !important;
+  background-image: none !important;
+  box-shadow: inset 0 0 0 1px var(--rt-border),
+    inset 0 1px 2px rgba(2, 6, 23, 0.7) !important;
+}
+
+.rt-calc .rt-range-wrap .rt-range::-moz-range-progress {
+  height: 0.5rem !important;
+  border-radius: var(--rt-radius-pill) !important;
+  background-color: var(--rt-accent) !important;
+  background-image: var(--rt-grad-accent) !important;
+}
+
+.rt-calc .rt-range-wrap .rt-range::-moz-range-thumb {
+  width: 1.375rem !important;
+  height: 1.375rem !important;
+  border-radius: 50% !important;
+  background-color: #fff !important;
+  background-image: none !important;
+  border: 3px solid var(--rt-accent) !important;
+  box-shadow: 0 2px 10px -2px rgba(2, 6, 23, 0.9) !important;
+  cursor: grab !important;
+}
+
+.rt-calc .rt-range-wrap .rt-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--rt-signal) !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rt-calc .rt-range-wrap .rt-range::-webkit-slider-thumb,
+  .rt-calc .rt-range-wrap .rt-range::-moz-range-thumb {
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   16. THEME OVERRIDE HARDENING: the methodology section
+   --------------------------------------------------------------------------
+   `.rt-methodology` sits outside `.rt-calc` by design, so it inherited the
+   theme's page surface. On a white page that meant light text on white, which
+   is unreadable. The section now paints its own dark surface and states the
+   colour of every text node inside it.
+
+   The selectors go through `.rt-methodology__inner`, the real wrapper in the
+   markup, so they outrank a theme's `.entry-content h2` / `.site-content p`
+   even when that theme rule also uses !important.
+   ========================================================================== */
+
+/* ---- 16.1 The surface ---------------------------------------------------- */
+
+/* `[class]` is not decoration: it lifts the selector to two units of
+   specificity, so a theme rule such as `.entry-content section` (one class plus
+   one element) still loses even if it also says !important. */
+.rt-methodology[class] {
+  background-color: var(--rt-bg) !important;
+  color: var(--rt-text) !important;
+  border-radius: var(--rt-radius-lg) !important;
+  /* The design assumed the page painted the edges. It does not any more. */
+  padding-bottom: clamp(1.5rem, 4vw, 2.5rem) !important;
+}
+
+/* ---- 16.2 Every text node inside it -------------------------------------- */
+
+.rt-methodology .rt-methodology__inner,
+.rt-methodology .rt-methodology__inner h1,
+.rt-methodology .rt-methodology__inner h2,
+.rt-methodology .rt-methodology__inner h3,
+.rt-methodology .rt-methodology__inner h4,
+.rt-methodology .rt-methodology__inner h5,
+.rt-methodology .rt-methodology__inner h6,
+.rt-methodology .rt-methodology__inner p,
+.rt-methodology .rt-methodology__inner li,
+.rt-methodology .rt-methodology__inner span,
+.rt-methodology .rt-methodology__inner strong,
+.rt-methodology .rt-methodology__inner b,
+.rt-methodology .rt-methodology__inner em,
+.rt-methodology .rt-methodology__inner i,
+.rt-methodology .rt-methodology__inner small,
+.rt-methodology .rt-methodology__inner code,
+.rt-methodology .rt-methodology__inner blockquote {
+  color: var(--rt-text) !important;
+  -webkit-text-fill-color: var(--rt-text) !important;
+  text-shadow: none !important;
+}
+
+.rt-methodology .rt-methodology__inner a,
+.rt-methodology .rt-methodology__inner a:visited {
+  color: var(--rt-signal) !important;
+  text-decoration: underline !important;
+}
+
+/* Bullets sit on the same surface, so they stop being invisible. */
+.rt-methodology .rt-methodology__inner ::marker {
+  color: var(--rt-text-muted) !important;
+}
+
+/* ---- 16.3 The intentional accents survive the blanket rule ---------------
+   Same !important, higher specificity, so the design reads as designed and
+   still nothing depends on which stylesheet the theme loads last. */
+
+.rt-methodology .rt-methodology__inner .rt-methodology__eyebrow {
+  color: var(--rt-signal) !important;
+  -webkit-text-fill-color: var(--rt-signal) !important;
+}
+
+.rt-methodology .rt-methodology__inner .rt-methodology__formula {
+  color: var(--rt-signal) !important;
+  -webkit-text-fill-color: var(--rt-signal) !important;
+  background-color: var(--rt-surface-sunken) !important;
+  border-color: var(--rt-border) !important;
+}
+
+.rt-methodology .rt-methodology__inner .rt-methodology__note {
+  color: var(--rt-text-muted) !important;
+  -webkit-text-fill-color: var(--rt-text-muted) !important;
+}
+
+.rt-methodology .rt-methodology__inner .rt-methodology__disclaimer .rt-methodology__h3 {
+  color: var(--rt-danger) !important;
+  -webkit-text-fill-color: var(--rt-danger) !important;
+}
+
+.rt-methodology .rt-methodology__inner
+  .rt-methodology__disclaimer
+  + .rt-methodology__disclaimer
+  .rt-methodology__h3 {
+  color: var(--rt-warn) !important;
+  -webkit-text-fill-color: var(--rt-warn) !important;
+}
+
+/* ---- 16.4 The panels inside the section ---------------------------------- */
+
+.rt-methodology .rt-methodology__inner .rt-methodology__card {
+  background-color: var(--rt-surface) !important;
+  background-image: var(--rt-grad-surface) !important;
+  border-color: var(--rt-border) !important;
+}
+
+.rt-methodology .rt-methodology__inner .rt-methodology__standards {
+  background-color: var(--rt-surface-sunken) !important;
+  border-color: var(--rt-border) !important;
+}
+
+.rt-methodology .rt-methodology__inner .rt-methodology__disclaimer {
+  background-color: rgba(248, 113, 113, 0.06) !important;
+  border-color: rgba(248, 113, 113, 0.24) !important;
+}
+
+.rt-methodology
+  .rt-methodology__inner
+  .rt-methodology__disclaimer
+  + .rt-methodology__disclaimer {
+  background-color: rgba(245, 158, 11, 0.06) !important;
+  border-color: rgba(245, 158, 11, 0.24) !important;
+}
