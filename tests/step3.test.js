@@ -330,11 +330,10 @@ const fillValid = (doc, fire, w) => {
      'no HTML-string injection anywhere');
   ok(!/api[_-]?key|secret|password|access[_-]?token/i.test(code),
      'no credentials in the bundle');
-  ok((code.match(/https:\/\/amzn\.to\//g) || []).length === 9,
-     'exactly 9 single affiliate URLs (one per product)',
-     (code.match(/https:\/\/amzn\.to\//g) || []).length);
+  const links = code.match(/link:\s*"https:\/\//g) || [];
+  ok(links.length === 9, 'exactly 9 single affiliate URLs (one per product)', links.length);
   ok(!/links\.(USD|GBP|CAD)/.test(code), 'no per-currency link lookups remain');
-  ok(RT.version === '0.11.0', 'version bumped to 0.11.0', RT.version);
+  ok(RT.version === '0.12.0', 'version bumped to 0.12.0', RT.version);
 
   /* ================= 11. Degrades without Step 3 markup ================= */
   console.log('\n11. Robustness');

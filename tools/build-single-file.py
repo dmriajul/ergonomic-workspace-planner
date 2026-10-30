@@ -84,7 +84,7 @@ def main() -> None:
 
   BEFORE YOU PUBLISH
   ---------------------------------------------------------------------------
-  • Replace the 9 placeholder Amazon links. See wordpress/REPLACE-THIS.md.
+  • Affiliate links live in RT_AFFILIATE_LINKS. See wordpress/REPLACE-THIS.md.
   • Add the canonical URL to the page (WordPress normally sets it; if you use
     an SEO plugin, set it there rather than pasting a <link> in this block).
   • Do NOT include the JSON-LD blocks from index.html inside this block: put

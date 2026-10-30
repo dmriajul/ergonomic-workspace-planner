@@ -33,10 +33,10 @@ affiliate replacement guide.
 │   ├── step1.test.js           # jsdom behavioural suite (98 assertions)
 │   ├── step2.test.js           # engine suite + fuzz (100 assertions)
 │   ├── step2-ui.test.js        # rendered-UI suite (67 assertions)
-│   ├── step3.test.js           # AEO + products + reveal (90 assertions)
+│   ├── step3.test.js           # AEO + products + reveal (92 assertions)
 │   ├── seo.test.js             # JSON-LD, fallbacks, E-E-A-T (86 assertions)
-│   ├── build.test.js           # production artefacts + drift check (67 assertions)
-│   └── affiliate.test.js       # link database integrity (48 assertions)
+│   ├── build.test.js           # production artefacts + drift check (74 assertions)
+│   └── affiliate.test.js       # link database integrity (52 assertions)
 ├── assets/css/
 │   ├── rt-tokens.css           # Layer 0: design tokens, scoped to .rt-calc
 │   ├── rt-calc.css             # Layer 1: scoped reset, shell, step skeleton
@@ -419,9 +419,9 @@ node tests/step2.test.js     # 100 assertions
 node tests/step2-ui.test.js  #  67 assertions
 node tests/step3.test.js     #  92 assertions
 node tests/seo.test.js       #  86 assertions
-node tests/build.test.js     #  67 assertions
-node tests/affiliate.test.js #  51 assertions
-node tests/theme-override.test.js # 145 assertions
+node tests/build.test.js     #  74 assertions
+node tests/affiliate.test.js #  52 assertions
+node tests/theme-override.test.js # 270 assertions
 ```
 
 `step1`: state defaults, slider↔input sync, mid-typing guard, snapping, all three
@@ -437,7 +437,7 @@ reconciliation, reactive updates from budget/pain/hours changes, currency reform
 (£ and C$), tier boundaries, extremes, a 120-case fuzz asserting percentages total 100
 and amounts total the budget, and graceful degradation when the panel is absent.
 
-`theme-override`: the Phase 12 hardening layer. It parses both stylesheets and asserts
+`theme-override`: the Phase 12 and 13 hardening layers. It parses both stylesheets and asserts
 that every forced property on `.rt-select` / `.rt-input` carries `!important`, that the
 open dropdown list and the placeholder states use the dark tokens, that the autofill
 repaint is present, that every selector in the layer starts with `.rt-` and outranks a
@@ -724,7 +724,7 @@ reach them and `:root` stays untouched.
 
 ### Verifying on the live site
 
-1. Bump the enqueue version (currently `0.11.0` in both `wordpress/functions-snippet.php`
+1. Bump the enqueue version (currently `0.12.0` in both `wordpress/functions-snippet.php`
    and the embed guide in `index.html`) so browsers fetch the new CSS. A stale
    `rt-calc.css` in the cache is the most common reason a fix "does not work".
 2. Hard reload the page and open Step 1.
@@ -733,6 +733,78 @@ reach them and `:root` stays untouched.
 
 `tests/build.test.js` fails if `wordpress/single-file.html` is not rebuilt after a CSS
 change, so the artefact always matches the sources.
+
+## Live-site repair: slider, methodology, affiliate links (Phase 13)
+
+Three separate faults showed up on the live GeneratePress site.
+
+### 1. The slider looked frozen
+
+The theme re-enabled the native appearance on `input[type="range"]` and painted
+its own thumb, so the custom thumb disappeared into a white track. A block
+wrapper also sat over the control, so clicks never reached the input.
+
+Section 15 of `rt-calc.css` fixes it, scoped to `.rt-calc`:
+
+- `.rt-range-wrap` and `.rt-range` get `position: relative`, `z-index: 99`,
+  `pointer-events: auto`, all forced.
+- `.rt-range` gets `-webkit-appearance: none` and `appearance: none` forced,
+  `background: transparent`, `touch-action: manipulation`, `cursor: pointer`
+  and `accent-color`.
+- The WebKit track, WebKit thumb, and Firefox track, progress and thumb are all
+  restyled with `!important` through `.rt-range-wrap`, which outranks a theme's
+  `input[type="range"]::-webkit-slider-thumb`.
+- The fill still reads `--rt-range-fill`, so nothing about the drag maths
+  changed.
+
+The JS side got three safety changes:
+
+- `commit()` ignores a non-finite value (a range or number control can hand back
+  `NaN` when a theme or extension rewrites it), so state can never be poisoned.
+- The slider handler falls back to `Number(range.value)` when
+  `valueAsNumber` is `NaN`.
+- `boot()` wraps `init()` in `try/catch` and reports
+  `[RT] Calculator could not start:` instead of failing silently.
+
+### 2. The methodology section was white on white
+
+`.rt-methodology` sits outside `.rt-calc` by design, so it inherited the theme's
+page surface. On a white page that meant light tokens on white.
+
+Section 16 paints the section `var(--rt-bg)`, rounds it, and states the colour of
+every text node inside it through `.rt-methodology .rt-methodology__inner`,
+which is two classes plus the real wrapper element. That outranks a theme's
+`.entry-content h2` or `.site-content p`, with or without `!important` of its
+own. The intentional accents (eyebrow, formula, note, the two disclaimer
+headings) are re-applied afterwards with higher specificity, so the design still
+reads as designed.
+
+`#e8eef9` on `#0f172a` is 16.9:1, so the section is comfortably AAA.
+
+### 3. The affiliate links were placeholders
+
+All nine slots now carry the real destinations: six
+`riajultech.com/recommends/` redirects, plus Uplift and Herman Miller for the two
+desk tiers that go direct. Prices, ratings and names are unchanged, so tier
+selection and every test that reconciles money still hold.
+
+`tests/affiliate.test.js` now accepts exactly four link shapes: a
+`/recommends/` redirect, an `amzn.to` short link, an `amazon.*` product URL
+(which must carry `?tag=`), or a host listed in `MERCHANT_HOSTS`. Anything else
+fails.
+
+### 4. The boot marker
+
+```js
+console.log("Calculator Loaded");
+```
+
+It is the first statement after `"use strict"` in the IIFE, so it prints before
+the affiliate database is even read. If it does not appear in the console, the
+script never parsed: look for a stray quote or a smart quote in a link. If it
+prints and nothing works, the markup is missing or the script ran before the DOM
+existed. `tests/build.test.js` asserts the marker exists and that it comes before
+`var RT_AFFILIATE_LINKS`.
 
 ## Conventions for upcoming phases
 
@@ -766,6 +838,8 @@ python3 -m http.server 8000
 - Phase 10: One link per product via Amazon OneLink; currency decoupled from URLs. ✅
 - Phase 11: Human-sounding copywriting rewrite: plain English, zero dashes, friendly
   disclaimers, simplified methodology. ✅
+- Phase 13: Live-site repair: reachable slider, methodology surface, real affiliate
+  URLs, boot marker and a safe boot path. ✅
 - Phase 12: Dark-mode hardening for live WordPress themes: forced field surfaces,
   readable placeholder text, dark dropdown lists, visible borders and focus rings. ✅
 - Phase 8 (optional): PHP shortcode/block package with server-side rendering of the

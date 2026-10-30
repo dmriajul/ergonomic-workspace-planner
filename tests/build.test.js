@@ -138,8 +138,8 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
      'fallback carries the 35/25/20 guidance', fallbackText.slice(0, 80));
   ok(/ergonomic chair/i.test(fallbackText), 'fallback names the chair (keyword)');
 
-  const linkCount = (inlineJs.match(/https:\/\/amzn\.to\//g) || []).length;
-  ok(linkCount >= 9, 'the 9 single affiliate links are present in the build', linkCount);
+  const linkCount = (inlineJs.match(/link:\s*"https:\/\//g) || []).length;
+  ok(linkCount === 9, 'the 9 single affiliate links are present in the build', linkCount);
   ok(single.includes('https://example.com') === false,
      'build does not embed the example.com canonical (head is not copied)');
 
@@ -169,7 +169,7 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
   const w = runDom.window, d = w.document;
   const RT = w.RT_Calculator;
   ok(typeof RT === 'object', 'RT_Calculator boots from the inlined script');
-  ok(RT.version === '0.11.0', 'version 0.11.0', RT.version);
+  ok(RT.version === '0.12.0', 'version 0.12.0', RT.version);
   ok(RT.getState().budget === 1000 && RT.getState().currency === 'USD',
      'default state correct', RT.getState());
 
@@ -190,6 +190,35 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
   gbp.checked = true; d.querySelector('#rt-cur-usd').checked = false; fire(gbp, 'change');
   ok(d.querySelector('#rt-product-list .rt-product__price').textContent.startsWith('£'),
      'currency switch works in the build');
+
+  /* ================= 8b. Boot marker + link literals ================= */
+  console.log('\n8b. Live-site safety');
+
+  // The console marker has to be the first thing the script does, so a boot
+  // failure is unambiguous in the browser console.
+  const bootLog = inlineJs.indexOf('console.log("Calculator Loaded")');
+  ok(bootLog !== -1, 'the script logs the "Calculator Loaded" boot marker');
+  ok(bootLog < inlineJs.indexOf('var RT_AFFILIATE_LINKS'),
+     'the marker runs before the affiliate database is read',
+     [bootLog, inlineJs.indexOf('var RT_AFFILIATE_LINKS')]);
+  ok(inlineJs.indexOf('"use strict"') < bootLog,
+     'strict mode is still the first statement in the IIFE');
+
+  // init() is wrapped, so a half-pasted block cannot leave a silent dead page.
+  ok(/function boot\(\)\s*\{[\s\S]*?try\s*\{\s*init\(\);/.test(inlineJs),
+     'init() is called from a try/catch boot wrapper');
+  ok(/console\.error\("\[RT\] Calculator could not start:"/.test(inlineJs),
+     'a failed boot is reported in the console');
+
+  // Every link literal must be a parseable absolute https URL, which is the
+  // exact class of typo that kills the whole script.
+  const linkLiterals = [...inlineJs.matchAll(/link:\s*"([^"]*)"/g)].map(m => m[1]);
+  ok(linkLiterals.length === 9, 'nine link literals in the build', linkLiterals.length);
+  const badLinks = linkLiterals.filter(u => {
+    try { const parsed = new URL(u); return parsed.protocol !== 'https:'; }
+    catch (e) { return true; }
+  });
+  ok(badLinks.length === 0, 'every link literal parses as an absolute https URL', badLinks);
 
   /* ================= 9. No drift ================= */
   console.log('\n9. Reproducible build (no drift)');

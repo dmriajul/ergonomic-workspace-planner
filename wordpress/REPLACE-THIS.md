@@ -1,7 +1,10 @@
-# Replace these placeholders before publishing
+# Publish checklist: links, canonical and credits
 
-Everything below is **mock data**: invented `amzn.to` short links and fake
-product ASINs. Nothing here is a working affiliate link.
+The nine affiliate links are live. Six are `riajultech.com/recommends/` redirects
+and three go straight to the merchant (Uplift and Herman Miller). Change a link
+in the one object below and every product card follows, in all three currencies.
+
+The only hard placeholder left is the canonical URL in `index.html`.
 
 ---
 
@@ -14,9 +17,9 @@ All links live in **one object at the very top of `assets/js/rt-calc.js`**
 RIAJUL'S AFFILIATE DATABASE
 ```
 
-**One link per product, 9 links in total.** Amazon OneLink (or an equivalent
-geo-redirecting short link) sends each visitor to their local storefront, so
-there is no USD / GBP / CAD variant to maintain.
+**One link per product, 9 links in total.** A redirect link (or Amazon OneLink)
+sends each visitor to their local storefront, so there is no USD / GBP / CAD
+variant to maintain.
 
 ```js
 var RT_AFFILIATE_LINKS = {
@@ -30,17 +33,17 @@ var RT_AFFILIATE_LINKS = {
 };
 ```
 
-| Slot | Where | Current mock URL |
+| Slot | Where | Current URL |
 | --- | --- | --- |
-| `RT_AFFILIATE_LINKS.chair.budget.link` | `rt-calc.js` line 146 | `https://amzn.to/3RtaChr01` |
-| `RT_AFFILIATE_LINKS.chair.mid.link` | `rt-calc.js` line 152 | `https://amzn.to/3RtaChr02` |
-| `RT_AFFILIATE_LINKS.chair.premium.link` | `rt-calc.js` line 158 | `https://amzn.to/3RtaChr03` |
-| `RT_AFFILIATE_LINKS.desk.budget.link` | `rt-calc.js` line 166 | `https://amzn.to/3RtaDsk01` |
-| `RT_AFFILIATE_LINKS.desk.mid.link` | `rt-calc.js` line 172 | `https://amzn.to/3RtaDsk02` |
-| `RT_AFFILIATE_LINKS.desk.premium.link` | `rt-calc.js` line 178 | `https://amzn.to/3RtaDsk03` |
-| `RT_AFFILIATE_LINKS.monitor.budget.link` | `rt-calc.js` line 186 | `https://amzn.to/3RtaMon01` |
-| `RT_AFFILIATE_LINKS.monitor.mid.link` | `rt-calc.js` line 192 | `https://amzn.to/3RtaMon02` |
-| `RT_AFFILIATE_LINKS.monitor.premium.link` | `rt-calc.js` line 198 | `https://amzn.to/3RtaMon03` |
+| `RT_AFFILIATE_LINKS.chair.budget.link` | `rt-calc.js` line 155 | `https://riajultech.com/recommends/modway-articulate-ergonomic-mesh-office-chair/` |
+| `RT_AFFILIATE_LINKS.chair.mid.link` | `rt-calc.js` line 161 | `https://riajultech.com/recommends/herman-miller-sayl-chair/` |
+| `RT_AFFILIATE_LINKS.chair.premium.link` | `rt-calc.js` line 167 | `https://riajultech.com/recommends/steelcase-gesture-office-chair/` |
+| `RT_AFFILIATE_LINKS.desk.budget.link` | `rt-calc.js` line 175 | `https://riajultech.com/recommends/flexispot-en1-one-piece-standing-desk/` |
+| `RT_AFFILIATE_LINKS.desk.mid.link` | `rt-calc.js` line 181 | `https://www.upliftdesk.com/clearance-standing-desk` |
+| `RT_AFFILIATE_LINKS.desk.premium.link` | `rt-calc.js` line 187 | `https://store.hermanmiller.com/standing-desks/jarvis-bamboo-standing-desk/2542428.html` |
+| `RT_AFFILIATE_LINKS.monitor.budget.link` | `rt-calc.js` line 195 | `https://riajultech.com/recommends/dell-24-monitor/` |
+| `RT_AFFILIATE_LINKS.monitor.mid.link` | `rt-calc.js` line 201 | `https://riajultech.com/recommends/lg-27up850-w-monitor-27-uhd/` |
+| `RT_AFFILIATE_LINKS.monitor.premium.link` | `rt-calc.js` line 207 | `https://riajultech.com/recommends/apple-studio-display/` |
 
 ### How the link is chosen (automatic, do not code this)
 
@@ -55,8 +58,8 @@ changes how budgets, prices and percentages are formatted.
 
 | Rule | Why |
 | --- | --- |
-| Full URL starting `https://` | Bare text or `amzn.to/xyz` without the scheme is rejected by the test suite |
-| Use your **OneLink** short link | Amazon redirects the visitor to their local store |
+| Full URL starting `https://` | Bare text or a scheme-less path is rejected by the test suite |
+| A redirect, `amzn.to`, an `amazon.*` product URL, or a known merchant host | Anything else fails `tests/affiliate.test.js` |
 | If you paste a full `amazon.com/dp/...` URL, keep `?tag=` | A product URL without your associate tag earns nothing |
 | Use **your own** tag | Using another publisher's tag is an Amazon policy violation and will get the account closed |
 | `price` stays a **number** (`1599`, not `"$1,599"`) | It is formatted into the active currency |
@@ -72,9 +75,11 @@ multi-currency structure reappears.
 | desk | FlexiSpot E1, $220, 4.4 | Uplift V2, $600, 4.7 | Fully Jarvis Bamboo, $950, 4.6 |
 | monitor | Dell P2422H 24", $180, 4.5 | LG 27UP850, $500, 4.6 | Apple Studio Display, $1,599, 4.4 |
 
-The `amzn.to` codes above are invented. Icons and category labels are **not** in
-this object. They live in `CATEGORY_META` just below it, so the database stays
-pure link data.
+The two merchant links (Uplift and Herman Miller) are outside your redirect
+domain, so add their host to `MERCHANT_HOSTS` in `tests/affiliate.test.js`
+before pointing another product at a new shop. Icons and category labels are
+**not** in this object. They live in `CATEGORY_META` just below it, so the
+database stays pure link data.
 
 ---
 
@@ -97,7 +102,7 @@ Only keep this tag if the calculator lives on a standalone page outside WordPres
 
 | Item | Location | What to do |
 | --- | --- | --- |
-| `3RtaChr01`-style codes | `RT_AFFILIATE_LINKS` | Invented; replace with your real OneLink short links |
+| Merchant hosts | `tests/affiliate.test.js` | Add a new shop host to `MERCHANT_HOSTS` before linking to it |
 | `Riajul Tech` name | methodology section + affiliate disclosure | Must match your Associates account name |
 | Affiliate disclosure wording | `#rt-affiliate-disclosure` | Amazon requires a visible disclosure; adjust to your brand |
 | Demo stylesheet | `assets/css/demo-page.css` | **Never enqueue or paste this.** It is the preview harness only |

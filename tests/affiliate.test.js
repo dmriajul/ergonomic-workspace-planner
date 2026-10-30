@@ -6,7 +6,8 @@
  * visitor hits a 404, so every link is checked for:
  *
  *   • a single link per product (no USD / GBP / CAD variants)
- *   • a full https:// URL on amzn.to or an amazon.* storefront
+ *   • a full https:// URL: a riajultech.com/recommends/ redirect, an amzn.to
+ *     short link, an amazon.* product URL, or a known merchant storefront
  *   • an associate tag when a full amazon.* product URL is used
  *   • a numeric price and a 0 to 5 rating
  *
@@ -50,9 +51,18 @@ const boot = async () => {
 const CATEGORIES = ['chair', 'desk', 'monitor'];
 const TIERS = ['budget', 'mid', 'premium'];
 
-/** A link is acceptable if it is https on amzn.to or an amazon.* storefront. */
+/** Accepted link shapes. One link per product, whatever the destination. */
+const isRedirect = url => /^https:\/\/riajultech\.com\/recommends\/[\w-]+\/$/i.test(url);
 const isAmznShort = url => /^https:\/\/amzn\.to\/[^\s]+$/i.test(url);
 const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url);
+
+/* Merchant storefronts the desk tiers link to directly, no redirect in front.
+   Add a host here before you point a product at a new shop. */
+const MERCHANT_HOSTS = ['www.upliftdesk.com', 'store.hermanmiller.com'];
+const isMerchant = url => {
+  const match = /^https:\/\/([^/]+)\//i.exec(url);
+  return Boolean(match) && MERCHANT_HOSTS.indexOf(match[1].toLowerCase()) !== -1;
+};
 
 (async function main() {
   const window = await boot();
@@ -109,9 +119,10 @@ const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url
       if (/\s/.test(url)) problems.push(`${where}: contains whitespace`);
       if (/your-single-link|example\.com/i.test(url)) problems.push(`${where}: placeholder text left in`);
 
-      const shortOk = isAmznShort(url);
       const productOk = isAmazonProduct(url);
-      if (!shortOk && !productOk) problems.push(`${where}: not an amzn.to or amazon.* URL`);
+      if (!isRedirect(url) && !isAmznShort(url) && !productOk && !isMerchant(url)) {
+        problems.push(`${where}: not a redirect, amzn.to, amazon.* or known merchant URL`);
+      }
 
       // A bare product URL without a tag earns nothing, so require one.
       if (productOk && !/[?&]tag=/.test(url)) problems.push(`${where}: amazon.* URL with no ?tag=`);
@@ -237,8 +248,11 @@ const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url
   const jsCode = JS
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
-  ok((jsCode.match(/https:\/\/amzn\.to\//g) || []).length === 9,
-     'code contains exactly 9 affiliate URLs (one per product)',
+  const linkLiterals = jsCode.match(/link:\s*"https:\/\//g) || [];
+  ok(linkLiterals.length === 9,
+     'code contains exactly 9 link literals (one per product)', linkLiterals.length);
+  ok((jsCode.match(/https:\/\/amzn\.to\//g) || []).length === 0,
+     'the invented amzn.to placeholders are gone',
      (jsCode.match(/https:\/\/amzn\.to\//g) || []).length);
   ok(!/links:\s*\{/.test(jsCode), 'no multi-currency links: { ... } blocks in code');
   ok(!/links\.(USD|GBP|CAD)/.test(jsCode), 'no links.USD / .GBP / .CAD references in code');
@@ -247,7 +261,7 @@ const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url
      'icons/labels live in CATEGORY_META, outside the DB');
   ok(!('icon' in DB.chair) && !('label' in DB.chair),
      'the affiliate database holds no presentation metadata');
-  ok(RT.version === '0.11.0', 'version bumped to 0.11.0', RT.version);
+  ok(RT.version === '0.12.0', 'version bumped to 0.12.0', RT.version);
 
   console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
