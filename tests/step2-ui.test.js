@@ -1,5 +1,5 @@
 /**
- * tests/step2-ui.test.js — Step 2 budget-preview UI
+ * tests/step2-ui.test.js: Step 2 budget-preview UI
  * ---------------------------------------------------------------------------
  * Boots the real index.html in jsdom and asserts what the user actually sees:
  * bar widths, percentage/amount columns, the three metric chips, and the
@@ -69,7 +69,7 @@ const boot = async () => {
   ok(doc.querySelectorAll('#rt-slot-budget .rt-chip').length === 3, 'three metric chips');
 
   /* ================= 2. Default paint (USD 1000, baseline) ================= */
-  console.log('\n2. Default paint — USD 1,000, no hours chosen');
+  console.log('\n2. Default paint: USD 1,000, no hours chosen');
   ok(barWidth('chair') === '35.00%', 'chair bar at 35.00%', barWidth('chair'));
   ok(barWidth('desk') === '25.00%', 'desk bar at 25.00%', barWidth('desk'));
   ok(barWidth('monitor') === '20.00%', 'monitor bar at 20.00%', barWidth('monitor'));
@@ -87,8 +87,8 @@ const boot = async () => {
      $('#rt-alloc-total').textContent);
 
   console.log('\n2b. Chips at default state');
-  ok($('#rt-metric-cpch').textContent.trim() === '\u2014',
-     'CPCH shows an em dash before hours are chosen', $('#rt-metric-cpch').textContent);
+  ok($('#rt-metric-cpch').textContent.trim() === 'Not yet',
+     'CPCH shows plain words before hours are chosen', $('#rt-metric-cpch').textContent);
   ok($('#rt-metric-cpch-note').textContent.includes('desk hours'),
      'CPCH note explains what is missing', $('#rt-metric-cpch-note').textContent);
   ok($('#rt-metric-risk').textContent.includes('Low'), 'risk chip Low at $350 chair',
@@ -248,6 +248,6 @@ const boot = async () => {
   ok(dom2.window.RT_Calculator.getState().budget === 1000,
      'widget still initialises without the Step 2 panel');
 
-  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
+  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
 })();

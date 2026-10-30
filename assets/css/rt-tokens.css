@@ -1,6 +1,6 @@
 /* ==========================================================================
    rt-tokens.css
-   Smart Ergonomic Calculator — design tokens (layer 0)
+   Smart Ergonomic Calculator: design tokens (layer 0)
    --------------------------------------------------------------------------
    Every token is declared on the namespaced root (.rt-calc) instead of :root,
    so the plugin never leaks variables into, or inherits them from, a theme.
@@ -9,8 +9,8 @@
 
 /* `--rt-*` tokens are consumed by .rt-calc (the widget) and .rt-methodology
    (static editorial content that sits beside it). Both are plugin-owned
-   surfaces, so the tokens are scoped to exactly those two selectors — never
-   :root — and a host theme still cannot override them by accident. */
+   surfaces, so the tokens are scoped to exactly those two selectors (never
+   :root), and a host theme still cannot override them by accident. */
 .rt-calc,
 .rt-methodology {
   color-scheme: dark;

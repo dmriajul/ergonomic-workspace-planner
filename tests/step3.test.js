@@ -1,5 +1,5 @@
 /**
- * tests/step3.test.js — AEO answer box, gear shortlist, reveal flow
+ * tests/step3.test.js: AEO answer box, gear shortlist, reveal flow
  * ---------------------------------------------------------------------------
  * Boots the real index.html in jsdom and drives the widget the way a user does:
  * fill in the profile, press "Calculate my plan", inspect the answer + cards.
@@ -116,7 +116,8 @@ const fillValid = (doc, fire, w) => {
      'names chair, desk and monitor with their allocations');
   ok(/\$3\d\d \(\d\d%\) to an ergonomic chair/.test(text),
      'chair amount and percentage are derived, not hardcoded', text.match(/\$\d+ \(\d+%\) to an ergonomic chair/));
-  ok(/covering keyboard, lighting and cables/.test(text), 'accounts for the remaining categories');
+  ok(/goes to your keyboard, lighting and cables/.test(text),
+     'accounts for the remaining categories');
   ok(!/[<>]/.test(text), 'contains no markup characters');
   ok(aeo.getAttribute('data-aeo-answer') !== null, 'paragraph is flagged for scrapers');
 
@@ -153,7 +154,7 @@ const fillValid = (doc, fire, w) => {
     RT.calculateAllocation({}));
   ok(a === b, 'same input gives the same text');
   ok(a.includes('£2,000'), 'GBP symbol and grouping used', a.slice(0, 80));
-  ok(a.includes('designer') && a.includes('6\u20138 hours'), 'work and hours phrases inserted');
+  ok(a.includes('designer') && a.includes('6 to 8 hours'), 'work and hours phrases inserted');
   ok(!a.includes('undefined') && !a.includes('NaN'), 'no undefined/NaN leaks into prose');
   const zero = RT.buildAEOText({ budget: 0, currency: 'USD', hours: null, work: null, pains: [] },
                                RT.calculateAllocation({}));
@@ -173,7 +174,8 @@ const fillValid = (doc, fire, w) => {
      preventive.slice(0, 110));
   ok(!/pain, upgrading/.test(preventive), 'no comma splice before "upgrading"');
   // Mirrors the example in the spec for the lead sentence.
-  ok(preventive.startsWith('For a designer working 4\u20136 hours daily'), 'working clause reads naturally');
+  ok(preventive.startsWith('For a designer working 4 to 6 hours daily'),
+     'working clause reads naturally');
 
   /* ================= 5. Product cards ================= */
   console.log('\n5. Product cards');
@@ -332,7 +334,7 @@ const fillValid = (doc, fire, w) => {
      'exactly 9 single affiliate URLs (one per product)',
      (code.match(/https:\/\/amzn\.to\//g) || []).length);
   ok(!/links\.(USD|GBP|CAD)/.test(code), 'no per-currency link lookups remain');
-  ok(RT.version === '0.9.0', 'version bumped to 0.9.0', RT.version);
+  ok(RT.version === '0.10.0', 'version bumped to 0.10.0', RT.version);
 
   /* ================= 11. Degrades without Step 3 markup ================= */
   console.log('\n11. Robustness');
@@ -347,6 +349,6 @@ const fillValid = (doc, fire, w) => {
   ok(survived, 'missing Step 3 markup does not throw');
   ok(w2.RT_Calculator.getState().budget === 1000, 'widget still initialises');
 
-  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
+  console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);
 })();

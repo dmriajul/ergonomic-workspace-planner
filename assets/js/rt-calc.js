@@ -1,5 +1,5 @@
 /**
- * rt-calc.js — Smart Ergonomic Calculator
+ * rt-calc.js: Smart Ergonomic Calculator
  * Step 1 interactions only (budget · ergonomic profile · pain points).
  * ---------------------------------------------------------------------------
  * NOTHING in this file performs Step 2 or Step 3 work: no budget allocation,
@@ -20,7 +20,7 @@
  *                                      seatedHeightCm, standingHeightCm }
  *  .parseHeightToInches(source)    → inches (number) | null
  *
- *  Step 2 engine (pure — safe to call with any state-like object)
+ *  Step 2 engine (pure, safe to call with any state-like object)
  *  .calculateAllocation(input)     → ratios summing to exactly 1
  *  .allocateAmounts(budget, alloc) → money per category (sums to budget)
  *  .calculateCPCH(budget, hours)   → "$0.08" | null
@@ -32,7 +32,7 @@
  *  .updateStep2UI()                → paints the panel + emits rt:step2update
  *  .debug                          → true to re-enable the console dump
  *
- *  Step 3 — AEO answer + gear shortlist
+ *  Step 3: AEO answer + gear shortlist
  *  .buildAEOText(state, alloc)     → quotable paragraph (pure)
  *  .selectProductTier(amount)      → { key, label }
  *  .checkPlanReadiness(state?)     → { ready, missing[] }
@@ -66,14 +66,14 @@
      in this file hardcodes an affiliate URL, so this is the only place you
      need to edit to swap products or links.
 
-     STRUCTURE — exactly three levels:
+     STRUCTURE: exactly three levels:
 
        RT_AFFILIATE_LINKS
          └── category   "chair" | "desk" | "monitor"
                └── tier   "budget" | "mid" | "premium"
                      ├── name    display name on the card
                      ├── price   NUMBER only, no symbol or comma
-                     ├── rating  0–5, one decimal
+                     ├── rating  0 to 5, one decimal
                      └── links   USD | GBP | CAD  → full amazon URL
 
      HOW A LINK IS CHOSEN AT RUNTIME (all automatic):
@@ -84,7 +84,7 @@
             above 700        → premium
        3. The URL is read from [category][tier].links[currency].
        4. Switching the currency toggle re-renders the cards with the new
-          regional links — no page reload.
+          regional links, so there is no page reload.
 
      RULES WHEN EDITING
        • Use full URLs beginning https://  (no bare "amzn.to/xyz").
@@ -105,20 +105,20 @@
      in this file hardcodes an affiliate URL, so this is the only place you
      need to edit to swap products or links.
 
-     ONE LINK PER PRODUCT — 9 links in total.
+     ONE LINK PER PRODUCT: 9 links in total.
      Amazon OneLink (or any geo-redirecting short link) sends each visitor to
      their local storefront, so there is no USD / GBP / CAD variant to
      maintain. The currency toggle still changes how PRICES and BUDGETS are
      formatted; it does not change the URL.
 
-     STRUCTURE — exactly three levels:
+     STRUCTURE: exactly three levels:
 
        RT_AFFILIATE_LINKS
          └── category   "chair" | "desk" | "monitor"
                └── tier   "budget" | "mid" | "premium"
                      ├── name    display name on the card
                      ├── price   NUMBER only, no symbol or comma
-                     ├── rating  0–5, one decimal
+                     ├── rating  0 to 5, one decimal
                      └── link    ONE full URL (https://amzn.to/... or https://www.amazon.tld/dp/...?tag=...)
 
      HOW A LINK IS CHOSEN AT RUNTIME (automatic):
@@ -131,7 +131,7 @@
 
      RULES WHEN EDITING
        • Use a full URL beginning https:// (amzn.to short links are fine).
-       • One link per product — do not add USD / GBP / CAD variants back.
+       • One link per product. Do not add USD / GBP / CAD variants back.
        • If you paste a full amazon.* product URL, keep your ?tag= on it:
          a link without your associate tag earns nothing.
        • price must stay a number: 1599, not "$1,599".
@@ -212,7 +212,7 @@
   };
 
   /* =========================================================================
-     1. Configuration — single source of truth for ranges and ratios
+     1. Configuration: single source of truth for ranges and ratios
      ========================================================================= */
 
   /**
@@ -271,7 +271,7 @@
   };
 
   /* =========================================================================
-     2. State — the single object every later phase reads from
+     2. State: the single object every later phase reads from
      ========================================================================= */
 
   /**
@@ -322,7 +322,7 @@
     return min + Math.round((value - min) / step) * step;
   }
 
-  /** Percentage of track travelled — feeds the --rt-range-fill custom property. */
+  /** Percentage of track travelled. Feeds the --rt-range-fill custom property. */
   function computeFillPercent(value, min, max) {
     if (max <= min) return 0;
     return round(clamp(((value - min) / (max - min)) * 100, 0, 100), 1);
@@ -347,7 +347,7 @@
   }
 
   /* =========================================================================
-     4. Height parsing + OSHA maths (pure — no DOM, no state)
+     4. Height parsing + OSHA maths (pure, no DOM, no state)
      ========================================================================= */
 
   /**
@@ -460,7 +460,7 @@
       return CURRENCIES[state.currency];
     }
 
-    /** Paint every derived surface for a committed value. */
+    /** Paint every rendered surface for a committed value. */
     function paint(value) {
       var configuration = cfg();
       var formatted = formatAmount(value, configuration.code);
@@ -470,7 +470,7 @@
         computeFillPercent(value, configuration.min, configuration.max) + "%"
       );
 
-      // The <output> also holds the currency glyph spans — never innerHTML it.
+      // The <output> also holds the currency glyph spans, so never use innerHTML on it.
       if (displayValue) displayValue.textContent = formatted;
 
       // Screen readers get the resolved amount instead of "1,000 of 4,350".
@@ -640,7 +640,7 @@
     }
 
     function handleChange(box) {
-      // Unchecking never needs to cascade — only a new selection does.
+      // Unchecking never needs to cascade. Only a new selection does.
       if (box.checked) {
         if (isExclusive(box)) {
           // "No Pain (Preventive)" clears every symptom card…
@@ -738,12 +738,12 @@
 
 
   /* =========================================================================
-     8. MODULE: STEP 2 CALCULATION ENGINE — Ergo Budget Ratio™, CPCH, Posture Risk
+     8. MODULE: STEP 2 CALCULATION ENGINE (Ergo Budget Ratio™, CPCH, Posture Risk)
      -------------------------------------------------------------------------
      Everything in this section is PURE: it takes plain values, returns plain
      objects, and never touches the DOM. That keeps it unit-testable in
      isolation and reusable by Step 3 without loading the widget.
-     No AEO copy and no affiliate logic lives here — by design.
+     No AEO copy and no affiliate logic lives here, by design.
      ========================================================================= */
 
   /* ---- 8.1 Configuration ------------------------------------------------- */
@@ -758,7 +758,7 @@
     cables: 0.05
   };
 
-  /** Canonical key order — output objects always come back in this order. */
+  /** Canonical key order: output objects always come back in this order. */
   var ALLOCATION_KEYS = ["chair", "desk", "monitor", "keyboard", "lighting", "cables"];
 
   /** No category may fall below 1 % of the budget. */
@@ -849,7 +849,7 @@
   /**
    * Water-filling normaliser: enforce a floor on every weight, then scale so the
    * set sums to exactly 1. Keys pushed to the floor are locked and the remaining
-   * weight is redistributed among the rest — plain "clamp then divide" would
+   * weight is redistributed among the rest. A plain "clamp then divide" would
    * drop locked keys back below the floor.
    *
    * @param  {Object<string,number>} weights raw (may be negative)
@@ -973,12 +973,12 @@
       });
     }
 
-    // Pain modifiers — "no-pain" carries none, so it is skipped naturally.
+    // Pain modifiers: "no-pain" carries none, so it is skipped naturally.
     pains.forEach(function (pain) {
       apply(PAIN_MODIFIERS[pain]);
     });
 
-    // Hours modifier — matched through the canonical value ("8plus" → "8+").
+    // Hours modifier: matched through the canonical value ("8plus" → "8+").
     var hours = resolveHours(source.hours);
     if (hours) apply(HOURS_MODIFIERS[hours.canonical]);
 
@@ -1017,7 +1017,7 @@
     return amounts;
   }
 
-  /* ---- 8.4 CPCH — Cost-Per-Comfort-Hour™ --------------------------------- */
+  /* ---- 8.4 CPCH: Cost-Per-Comfort-Hour™ --------------------------------- */
 
   /**
    * Raw (unformatted) cost per comfort hour.
@@ -1077,7 +1077,7 @@
     if (!isFinite(chair)) chair = 0;
 
     // Chair spend: the first tier the amount falls under wins (tiered, not
-    // cumulative — cumulative scoring would double-penalise a cheap chair).
+    // cumulative, because cumulative scoring would double-penalise a cheap chair).
     var chairPoints = 0;
     for (var i = 0; i < CHAIR_RISK_TIERS.length; i++) {
       if (chair < CHAIR_RISK_TIERS[i].below) {
@@ -1190,7 +1190,7 @@
 
   /**
    * Run the whole Step 2 pipeline for a state snapshot.
-   * Pure: no DOM, no logging, no events — so tests and Step 3 can call it.
+   * Pure: no DOM, no logging, no events, so tests and Step 3 can call it.
    *
    * @param  {Object} [snapshot] state-like object; defaults to live state
    * @return {{allocation:Object, amounts:Object, chairAmount:number,
@@ -1230,7 +1230,7 @@
 
   /**
    * Render a computed Step 2 result into the #rt-slot-budget panel.
-   * Pure DOM writing — no math, no state mutation.
+   * Pure DOM writing: no math, no state mutation.
    *
    * @param {Object} result  output of computeStep2()
    * @param {Object} refs    cached element references from init
@@ -1278,16 +1278,16 @@
     if (refs.cpch) {
       var hours = resolveHours(result.hours);
       if (result.cpch === null) {
-        refs.cpch.textContent = "\u2014";
+        refs.cpch.textContent = "Not yet";
         setTone(refs.cpch, "muted");
-        if (refs.cpchNote) refs.cpchNote.textContent = "Choose desk hours to unlock";
+        if (refs.cpchNote) refs.cpchNote.textContent = "Add your desk hours first";
       } else {
         refs.cpch.textContent = result.cpch + "/hr";
         setTone(refs.cpch, "positive");
         if (refs.cpchNote) {
           refs.cpchNote.textContent = hours
             ? hours.hours + " hrs/day \u00D7 365 \u00D7 5 working days"
-            : "Per comfort hour, amortised over 5 years";
+            : "Cost of one comfortable hour over 5 years";
         }
       }
     }
@@ -1336,8 +1336,8 @@
     if (score.painPoints > 0) {
       causes.push(score.painPoints === 1 ? "1 pain point" : score.painPoints + " pain points");
     }
-    if (!causes.length) return "No risk factors detected";
-    return "Driven by " + causes.join(" \u00B7 ");
+    if (!causes.length) return "No risk factors found";
+    return "Mainly from " + causes.join(" \u00B7 ");
   }
 
   /**
@@ -1363,10 +1363,10 @@
   function logStep2(result) {
     if (!window.console) return;
 
-    var cpchText = result.cpch === null ? "(pick daily hours)" : result.cpch;
+    var cpchText = result.cpch === null ? "(pick your desk hours)" : result.cpch;
     if (typeof window.console.groupCollapsed === "function") {
       window.console.groupCollapsed(
-        "[RT] Step 2 \u2014 " + result.currency + " " + formatAmount(result.budget, result.currency)
+        "[RT] Step 2: " + result.currency + " " + formatAmount(result.budget, result.currency)
       );
       window.console.log("Allocation:", result.allocation);
       window.console.log("Amounts:", result.amounts);
@@ -1406,11 +1406,11 @@
 
 
   /* =========================================================================
-     9. MODULE: STEP 3 — AEO ANSWER + GEAR SHORTLIST
+     9. MODULE: STEP 3 (AEO ANSWER + GEAR SHORTLIST)
      -------------------------------------------------------------------------
      Two halves, kept apart on purpose:
-       • buildAEOText()  — pure string builder, no DOM, unit-testable.
-       • renderProducts() — DOM writer that turns mock affiliate data into cards.
+       • buildAEOText()  pure string builder, no DOM, unit-testable.
+       • renderProducts(): DOM writer that turns mock affiliate data into cards.
      Text is written with textContent (never innerHTML), so product names or
      currency symbols can never inject markup.
      ========================================================================= */
@@ -1422,9 +1422,9 @@
 
   /**
    * Allocated spend → product tier.
-   * The spec's bands are `budget < 250`, `mid 250–700` (700 inclusive) and
+   * The spec's bands are `budget < 250`, `mid 250 to 700` (700 inclusive) and
    * `premium > 700`, so the boundaries are stated explicitly rather than
-   * derived from a single comparison — a strict `<` would push exactly 700
+   * set by one comparison, because a strict `<` would push exactly 700
    * into Premium and contradict the stated "Mid: $250-$700".
    */
   var PRODUCT_TIERS = [
@@ -1449,8 +1449,8 @@
 
   var HOURS_PHRASES = {
     "under-4": "under 4 hours",
-    "4-6": "4\u20136 hours",
-    "6-8": "6\u20138 hours",
+    "4-6": "4 to 6 hours",
+    "6-8": "6 to 8 hours",
     "8+": "8+ hours"
   };
 
@@ -1488,7 +1488,7 @@
    * Build the quotable answer sentence(s) from state + allocation.
    *
    * Written as one plain paragraph with no markup, so an AI answer engine can
-   * lift it verbatim. Every number is derived — nothing is hardcoded.
+   * lift it verbatim. Every number is calculated from state, so nothing is hardcoded.
    *
    * @param  {Object} stateLike   { budget, currency, hours, work, pains }
    * @param  {Object} allocation  ratios keyed by category
@@ -1505,7 +1505,7 @@
     var pains = Array.isArray(data.pains) ? data.pains : [];
     var hours = resolveHours(data.hours);
 
-    // Amounts are derived from the same rounding path as the UI, so the prose
+    // Amounts come from the same rounding path as the UI, so the prose
     // and the cards can never disagree.
     var amounts = allocateAmounts(budget, alloc);
     var percentages = toDisplayPercentages(alloc);
@@ -1513,7 +1513,7 @@
     /* ---- opening clause: who is this for? ---- */
     var workPhrase = WORK_PHRASES[data.work] || "professional";
 
-    // "daily" only belongs here when an hours band was actually chosen —
+    // "daily" only belongs here when an hours band was actually chosen,
     // otherwise the sentence reads "working a full day daily".
     var hoursClause = hours
       ? "working " + HOURS_PHRASES[hours.canonical] + " daily"
@@ -1544,7 +1544,7 @@
     /* ---- body: the split ---- */
     var lead =
       "For a " + workPhrase + " " + hoursClause + painClause +
-      ", the recommended ergonomic desk setup budget is " + money(budget) + ".";
+      ", we recommend an Ergonomic Desk Setup Budget of " + money(budget) + ".";
 
     var restKeys = ALLOCATION_KEYS.filter(function (key) {
       return PRODUCT_CATEGORIES.indexOf(key) === -1;
@@ -1557,11 +1557,11 @@
     }, 0);
 
     var split =
-      " Using the Ergo Budget Ratio\u2122 calibrated to OSHA standards, allocate " +
+      " The Ergo Budget Ratio, built on OSHA standards, splits it like this: " +
       money(amounts.chair) + " (" + percentages.chair + "%) to an ergonomic chair, " +
       money(amounts.desk) + " (" + percentages.desk + "%) to a desk, and " +
-      money(amounts.monitor) + " (" + percentages.monitor + "%) to a monitor, with the remaining " +
-      money(restAmount) + " (" + restPercent + "%) covering keyboard, lighting and cables.";
+      money(amounts.monitor) + " (" + percentages.monitor + "%) to a monitor. The other " +
+      money(restAmount) + " (" + restPercent + "%) goes to your keyboard, lighting and cables.";
 
     return lead + split;
   }
@@ -1671,7 +1671,7 @@
     fit.setAttribute("data-fit", difference >= 0 ? "yes" : "no");
     fit.textContent =
       difference >= 0
-        ? "Within your " + formatMoney(amount, currency) + " allocation"
+        ? "Fits your " + formatMoney(amount, currency) + " share"
         : "Over by " + formatMoney(Math.abs(difference), currency);
 
     facts.appendChild(price);
@@ -1679,7 +1679,7 @@
     facts.appendChild(fit);
 
     /* CTA */
-    // One link per product — no currency lookup.
+    // One link per product, so there is no currency lookup.
     var href = resolveAffiliateLink(product);
     var cta = doc.createElement(href ? "a" : "span");
     cta.className = "rt-product__cta";
@@ -1776,7 +1776,7 @@
 
     if (refs.hint) {
       if (readiness.ready) {
-        refs.hint.textContent = "Ready — your plan will appear below.";
+        refs.hint.textContent = "Ready when you are. Your plan will appear below.";
         refs.hint.setAttribute("data-state", "ready");
       } else {
         refs.hint.textContent =
@@ -1916,14 +1916,14 @@
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.9.0";
+  RT_Calculator.version = "0.10.0";
   RT_Calculator.getState = getState;
 
   // Step 1
   RT_Calculator.calculateErgonomicHeights = calculateErgonomicHeights;
   RT_Calculator.parseHeightToInches = parseHeightToInches;
 
-  // Step 2 — pure, DOM-free
+  // Step 2: pure and DOM-free
   RT_Calculator.calculateAllocation = calculateAllocation;
   RT_Calculator.allocateAmounts = allocateAmounts;
   RT_Calculator.calculateCPCH = calculateCPCH;
@@ -1937,14 +1937,14 @@
   // Step 2 UI hook
   RT_Calculator.updateStep2UI = updateStep2UI;
 
-  // Step 3 — answer box + gear shortlist
+  // Step 3: answer box + gear shortlist
   RT_Calculator.buildAEOText = buildAEOText;
   RT_Calculator.selectProductTier = selectProductTier;
   RT_Calculator.checkPlanReadiness = checkPlanReadiness;
   RT_Calculator.renderProducts = renderProducts;
   RT_Calculator.renderStep3UI = renderStep3UI;
   RT_Calculator.calculatePlan = calculatePlan;
-  /** The single affiliate database — edit it at the top of this file. */
+  /** The single affiliate database. Edit it at the top of this file. */
   RT_Calculator.affiliateLinks = RT_AFFILIATE_LINKS;
   /** @deprecated alias kept so older snippets keep working. */
   RT_Calculator.products = RT_AFFILIATE_LINKS;

@@ -5,7 +5,7 @@ product ASINs. Nothing here is a working affiliate link.
 
 ---
 
-## 1. The affiliate database — 9 links only
+## 1. The affiliate database: 9 links only
 
 All links live in **one object at the very top of `assets/js/rt-calc.js`**
 (or the inline `<script>` of `wordpress/single-file.html`). Search for:
@@ -14,7 +14,7 @@ All links live in **one object at the very top of `assets/js/rt-calc.js`**
 RIAJUL'S AFFILIATE DATABASE
 ```
 
-**One link per product — 9 in total.** Amazon OneLink (or an equivalent
+**One link per product, 9 links in total.** Amazon OneLink (or an equivalent
 geo-redirecting short link) sends each visitor to their local storefront, so
 there is no USD / GBP / CAD variant to maintain.
 
@@ -42,10 +42,10 @@ var RT_AFFILIATE_LINKS = {
 | `RT_AFFILIATE_LINKS.monitor.mid.link` | `rt-calc.js` line 192 | `https://amzn.to/3RtaMon02` |
 | `RT_AFFILIATE_LINKS.monitor.premium.link` | `rt-calc.js` line 198 | `https://amzn.to/3RtaMon03` |
 
-### How the link is chosen (automatic — do not code this)
+### How the link is chosen (automatic, do not code this)
 
 1. The money allocated to the category picks the tier:
-   `under 250` -> `budget`, `250–700` -> `mid`, `above 700` -> `premium`.
+   `under 250` -> `budget`, `250 to 700` -> `mid`, `above 700` -> `premium`.
 2. The URL is read from `RT_AFFILIATE_LINKS[category][tier].link`.
 
 The currency toggle (USD / GBP / CAD) **does not touch the URL**. It only
@@ -61,19 +61,19 @@ changes how budgets, prices and percentages are formatted.
 | Use **your own** tag | Using another publisher's tag is an Amazon policy violation and will get the account closed |
 | `price` stays a **number** (`1599`, not `"$1,599"`) | It is formatted into the active currency |
 
-Do **not** add `links: { USD, GBP, CAD }` back — a test fails if a
+Do **not** add `links: { USD, GBP, CAD }` back, because a test fails if a
 multi-currency structure reappears.
 
 ### Also update the product data
 
 | Category | Budget tier | Mid tier | Premium tier |
 | --- | --- | --- | --- |
-| chair | ErgoBudget Mesh Chair — $150 — 4.3 | Herman Miller Sayl — $450 — 4.6 | Steelcase Gesture — $1,200 — 4.8 |
-| desk | FlexiSpot E1 — $220 — 4.4 | Uplift V2 — $600 — 4.7 | Fully Jarvis Bamboo — $950 — 4.6 |
-| monitor | Dell P2422H 24" — $180 — 4.5 | LG 27UP850 — $500 — 4.6 | Apple Studio Display — $1,599 — 4.4 |
+| chair | ErgoBudget Mesh Chair, $150, 4.3 | Herman Miller Sayl, $450, 4.6 | Steelcase Gesture, $1,200, 4.8 |
+| desk | FlexiSpot E1, $220, 4.4 | Uplift V2, $600, 4.7 | Fully Jarvis Bamboo, $950, 4.6 |
+| monitor | Dell P2422H 24", $180, 4.5 | LG 27UP850, $500, 4.6 | Apple Studio Display, $1,599, 4.4 |
 
 The `amzn.to` codes above are invented. Icons and category labels are **not** in
-this object — they live in `CATEGORY_META` just below it, so the database stays
+this object. They live in `CATEGORY_META` just below it, so the database stays
 pure link data.
 
 ---
@@ -87,7 +87,8 @@ pure link data.
 ```
 
 Change it to the real page URL. In WordPress you normally do **not** hand-write a
-canonical — Yoast / Rank Math set one automatically, and a second one is harmful.
+canonical, because Yoast / Rank Math set one automatically and a second one is
+harmful.
 Only keep this tag if the calculator lives on a standalone page outside WordPress.
 
 ---
@@ -99,7 +100,7 @@ Only keep this tag if the calculator lives on a standalone page outside WordPres
 | `3RtaChr01`-style codes | `RT_AFFILIATE_LINKS` | Invented; replace with your real OneLink short links |
 | `Riajul Tech` name | methodology section + affiliate disclosure | Must match your Associates account name |
 | Affiliate disclosure wording | `#rt-affiliate-disclosure` | Amazon requires a visible disclosure; adjust to your brand |
-| Demo stylesheet | `assets/css/demo-page.css` | **Never enqueue or paste this** — preview harness only |
+| Demo stylesheet | `assets/css/demo-page.css` | **Never enqueue or paste this.** It is the preview harness only |
 | Google Fonts `<link>` | `index.html` `<head>` | Optional; self-host if GDPR matters |
 
 > OneLink note: Amazon's OneLink requires the tag of the *local* store to be
@@ -114,7 +115,7 @@ Only keep this tag if the calculator lives on a standalone page outside WordPres
 # No mock short links left (expect the count to drop below 9 as you edit)
 grep -c "https://amzn.to/" assets/js/rt-calc.js
 
-# Full suite — includes link-shape checks
+# Full suite, including link-shape checks
 npm i --no-save jsdom csstree-validator
 node tests/step1.test.js && node tests/step2.test.js && node tests/step2-ui.test.js \
   && node tests/step3.test.js && node tests/seo.test.js && node tests/affiliate.test.js \
@@ -124,6 +125,6 @@ node tests/step1.test.js && node tests/step2.test.js && node tests/step2-ui.test
 python3 tools/build-single-file.py
 ```
 
-The single-file build embeds a **copy** of the JS — editing `rt-calc.js` will not
+The single-file build embeds a **copy** of the JS, so editing `rt-calc.js` will not
 change `wordpress/single-file.html` until you re-run the build script.
 `tests/build.test.js` fails when the two drift apart.
