@@ -2,16 +2,17 @@
  * tests/affiliate.test.js — the centralised affiliate database
  * ---------------------------------------------------------------------------
  * This suite exists to protect the site owner while bulk-editing links. A typo
- * in one of the 27 URLs is hard to spot by eye and impossible to notice until
- * a visitor hits a 404, so every link is checked for:
+ * in one of the 9 URLs is hard to spot by eye and impossible to notice until a
+ * visitor hits a 404, so every link is checked for:
  *
- *   • a full https:// Amazon URL (no bare amzn.to short links)
- *   • the correct regional storefront for its currency key
- *   • an associate tag parameter
+ *   • a single link per product (no USD / GBP / CAD variants)
+ *   • a full https:// URL on amzn.to or an amazon.* storefront
+ *   • an associate tag when a full amazon.* product URL is used
  *   • a numeric price and a 0–5 rating
  *
- * It also proves the runtime path: allocation -> tier -> regional link, and
- * that switching currency re-renders the cards without a reload.
+ * It also proves the runtime path: allocation -> tier -> that product's link,
+ * and that switching currency changes the money formatting WITHOUT touching
+ * the affiliate URL.
  *
  *   npm i --no-save jsdom
  *   node tests/affiliate.test.js
@@ -46,10 +47,12 @@ const boot = async () => {
   return dom.window;
 };
 
-const CURRENCIES = ['USD', 'GBP', 'CAD'];
 const CATEGORIES = ['chair', 'desk', 'monitor'];
 const TIERS = ['budget', 'mid', 'premium'];
-const HOST = { USD: 'www.amazon.com', GBP: 'www.amazon.co.uk', CAD: 'www.amazon.ca' };
+
+/** A link is acceptable if it is https on amzn.to or an amazon.* storefront. */
+const isAmznShort = url => /^https:\/\/amzn\.to\/[^\s]+$/i.test(url);
+const isAmazonProduct = url => /^https:\/\/www\.amazon\.[a-z.]+\/dp\//i.test(url);
 
 (async function main() {
   const window = await boot();
@@ -86,31 +89,40 @@ const HOST = { USD: 'www.amazon.com', GBP: 'www.amazon.co.uk', CAD: 'www.amazon.
        `${cat} has budget/mid/premium directly (no wrapper level)`, Object.keys(DB[cat]));
   });
   ok(!('tiers' in DB.chair), 'no legacy .tiers wrapper remains');
-  ok(Object.keys(DB.chair.budget).sort().join() === 'links,name,price,rating',
-     'each tier has name, price, rating, links', Object.keys(DB.chair.budget));
+  ok(Object.keys(DB.chair.budget).sort().join() === 'link,name,price,rating',
+     'each tier has name, price, rating and ONE link', Object.keys(DB.chair.budget));
+  ok(!('links' in DB.chair.budget), 'the multi-currency .links object is gone');
 
   /* ================= 2. Every one of the 27 links ================= */
-  console.log('\n2. Link integrity (27 slots)');
+  console.log('\n2. Link integrity (9 slots, one per product)');
   let slotCount = 0;
   const problems = [];
   CATEGORIES.forEach(cat => {
     TIERS.forEach(tier => {
+      slotCount += 1;
       const product = DB[cat][tier];
-      CURRENCIES.forEach(cur => {
-        slotCount += 1;
-        const url = (product.links || {})[cur];
-        const where = `${cat}.${tier}.links.${cur}`;
-        if (!url) return problems.push(`${where}: missing`);
-        if (!/^https:\/\//.test(url)) problems.push(`${where}: not https`);
-        if (/^https:\/\/amzn\.to/.test(url)) problems.push(`${where}: bare short link`);
-        if (url.indexOf(HOST[cur]) === -1) problems.push(`${where}: wrong storefront`);
-        if (!/[?&]tag=/.test(url)) problems.push(`${where}: no associate tag`);
-      });
+      const where = `${cat}.${tier}.link`;
+      const url = product.link;
+
+      if (typeof url !== 'string' || !url.trim()) return problems.push(`${where}: missing`);
+      if (!/^https:\/\//.test(url)) problems.push(`${where}: not https`);
+      if (/\s/.test(url)) problems.push(`${where}: contains whitespace`);
+      if (/your-single-link|example\.com/i.test(url)) problems.push(`${where}: placeholder text left in`);
+
+      const shortOk = isAmznShort(url);
+      const productOk = isAmazonProduct(url);
+      if (!shortOk && !productOk) problems.push(`${where}: not an amzn.to or amazon.* URL`);
+
+      // A bare product URL without a tag earns nothing, so require one.
+      if (productOk && !/[?&]tag=/.test(url)) problems.push(`${where}: amazon.* URL with no ?tag=`);
     });
   });
-  ok(slotCount === 27, 'exactly 27 link slots', slotCount);
-  ok(problems.length === 0, 'all 27 links are valid, regional and tagged',
-     problems.slice(0, 6));
+  ok(slotCount === 9, 'exactly 9 link slots (3 categories x 3 tiers)', slotCount);
+  ok(problems.length === 0, 'all 9 links are valid single https URLs', problems.slice(0, 6));
+
+  const urls = CATEGORIES.flatMap(c => TIERS.map(t => DB[c][t].link));
+  ok(new Set(urls).size === 9, 'all 9 links are distinct (no copy-paste duplicates)',
+     urls.length - new Set(urls).size + ' duplicate(s)');
 
   console.log('\n2b. Product data');
   const badPrices = [];
@@ -155,51 +167,57 @@ const HOST = { USD: 'www.amazon.com', GBP: 'www.amazon.co.uk', CAD: 'www.amazon.
   ok(tierKey() === expectedTier, 'rendered tier matches the chair allocation', [tierKey(), expectedTier]);
   ok(nameOf() === DB.chair[expectedTier].name, 'rendered name comes from the DB',
      [nameOf(), DB.chair[expectedTier].name]);
-  ok(href() === DB.chair[expectedTier].links.USD, 'rendered href is DB.chair[tier].links.USD',
-     [href(), DB.chair[expectedTier].links.USD]);
+  ok(href() === DB.chair[expectedTier].link, 'rendered href is DB.chair[tier].link',
+     [href(), DB.chair[expectedTier].link]);
 
   console.log('\n3c. Mutating the DB changes the card (single source of truth)');
-  const original = DB.chair[expectedTier].links.USD;
-  DB.chair[expectedTier].links.USD = 'https://www.amazon.com/dp/TESTONLY?tag=test-20';
+  const original = DB.chair[expectedTier].link;
+  DB.chair[expectedTier].link = 'https://www.amazon.com/dp/TESTONLY?tag=test-20';
   RT.updateStep2UI();
   RT.calculatePlan();
   ok(href() === 'https://www.amazon.com/dp/TESTONLY?tag=test-20',
      'editing the object is enough — no code change needed', href());
-  DB.chair[expectedTier].links.USD = original;
+  DB.chair[expectedTier].link = original;
   RT.calculatePlan();
 
   /* ================= 4. Currency switch re-renders ================= */
-  console.log('\n4. Currency switch re-renders the cards');
+  console.log('\n4. Currency no longer affects the URL');
+  const linkBefore = href();
   const gbp = $('#rt-cur-gbp');
   gbp.checked = true; $('#rt-cur-usd').checked = false; fire(gbp, 'change');
-  ok(href() === DB.chair[tierKey()].links.GBP, 'GBP switch renders links.GBP', href());
-  ok(/amazon\.co\.uk/.test(href()), 'GBP href points at amazon.co.uk');
-  ok(tierKey() === expectedTier, 'tier is unchanged by a currency switch');
+  ok(href() === linkBefore, 'GBP switch leaves the affiliate URL untouched', [href(), linkBefore]);
+  ok(!/amazon\.co\.uk/.test(href()), 'no per-region URL is generated any more', href());
+  ok(doc.querySelector('#rt-product-list .rt-product__price').textContent.startsWith('£'),
+     'GBP still reformats the PRICE (currency keeps its money job)');
 
   const cad = $('#rt-cur-cad');
   cad.checked = true; gbp.checked = false; fire(cad, 'change');
-  ok(href() === DB.chair[tierKey()].links.CAD, 'CAD switch renders links.CAD', href());
-  ok(/amazon\.ca/.test(href()), 'CAD href points at amazon.ca');
+  ok(href() === linkBefore, 'CAD switch leaves the affiliate URL untouched', [href(), linkBefore]);
+  ok(doc.querySelector('#rt-product-list .rt-product__price').textContent.startsWith('C$'),
+     'CAD still reformats the price');
 
   const usd = $('#rt-cur-usd');
   usd.checked = true; cad.checked = false; fire(usd, 'change');
-  ok(href() === DB.chair[tierKey()].links.USD, 'USD switch back renders links.USD', href());
+  ok(href() === linkBefore, 'USD switch back leaves the affiliate URL untouched', href());
+  ok(tierKey() === expectedTier, 'tier is unchanged by a currency switch');
+  ok(doc.querySelector('#rt-product-list .rt-product__price').textContent.startsWith('$'),
+     'USD restores the $ price format');
 
-  console.log('\n4b. All three cards follow the currency, not just the chair');
+  console.log('\n4b. Every card keeps its own link across currencies');
   const all = [...doc.querySelectorAll('#rt-product-list .rt-product')];
   ok(all.length === 3, 'three cards present');
-  ok(all.every(c => /amazon\.com/.test(c.querySelector('.rt-product__cta').getAttribute('href'))),
-     'every card uses the USD storefront while USD is active');
-  const noReload = all[0].querySelector('.rt-product__cta').getAttribute('href');
+  const hrefsUsd = all.map(c => c.querySelector('.rt-product__cta').getAttribute('href'));
   const gbp2 = $('#rt-cur-gbp');
   gbp2.checked = true;
   $('#rt-cur-usd').checked = false;
   fire(gbp2, 'change');
-  const afterSwitch = [...doc.querySelectorAll('#rt-product-list .rt-product')]
+  const hrefsGbp = [...doc.querySelectorAll('#rt-product-list .rt-product')]
     .map(c => c.querySelector('.rt-product__cta').getAttribute('href'));
-  ok(afterSwitch.every(u => /amazon\.co\.uk/.test(u)),
-     'all cards switch to the UK storefront after the toggle', afterSwitch);
-  ok(afterSwitch[0] !== noReload, 'href actually changed (no stale cards)');
+  ok(hrefsGbp.join('|') === hrefsUsd.join('|'),
+     'all three hrefs are identical before and after the toggle', [hrefsUsd, hrefsGbp]);
+  ok(hrefsGbp.every((u, i) => u === DB[CATEGORIES[i]][
+       doc.querySelectorAll('#rt-product-list .rt-product')[i].getAttribute('data-tier')].link),
+     'each card still points at its own product link');
   const usd2 = $('#rt-cur-usd');
   usd2.checked = true;
   $('#rt-cur-gbp').checked = false;
@@ -209,22 +227,27 @@ const HOST = { USD: 'www.amazon.com', GBP: 'www.amazon.co.uk', CAD: 'www.amazon.
   const range = $('#rt-budget-range');
   range.value = '5000'; fire(range, 'input');
   ok(tierKey() === 'premium', 'big budget promotes the chair to premium', tierKey());
-  ok(href() === DB.chair.premium.links.USD, 'premium link is used', href());
+  ok(href() === DB.chair.premium.link, 'premium link is used', href());
   range.value = '600'; fire(range, 'input');
-  ok(href() === DB.chair[tierKey()].links.USD, 'href always tracks the active tier');
+  ok(href() === DB.chair[tierKey()].link, 'href always tracks the active tier');
 
   /* ================= 5. Guard rails ================= */
   console.log('\n5. Guard rails');
-  ok(!/https:\/\/amzn\.to/.test(JS), 'no bare amzn.to links left in the source');
-  ok((JS.match(/https:\/\/www\.amazon\./g) || []).length === 27,
-     'source contains exactly 27 Amazon URLs',
-     (JS.match(/https:\/\/www\.amazon\./g) || []).length);
-  ok(/riajultech-/.test(JS), 'mock associate tags are clearly marked as placeholders');
+  // Count in executable code only: the banner comment shows an example URL.
+  const jsCode = JS
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  ok((jsCode.match(/https:\/\/amzn\.to\//g) || []).length === 9,
+     'code contains exactly 9 affiliate URLs (one per product)',
+     (jsCode.match(/https:\/\/amzn\.to\//g) || []).length);
+  ok(!/links:\s*\{/.test(jsCode), 'no multi-currency links: { ... } blocks in code');
+  ok(!/links\.(USD|GBP|CAD)/.test(jsCode), 'no links.USD / .GBP / .CAD references in code');
+
   ok(typeof RT.categoryMeta === 'object' && RT.categoryMeta.chair.icon.length > 0,
      'icons/labels live in CATEGORY_META, outside the DB');
   ok(!('icon' in DB.chair) && !('label' in DB.chair),
      'the affiliate database holds no presentation metadata');
-  ok(RT.version === '0.8.0', 'version bumped to 0.8.0', RT.version);
+  ok(RT.version === '0.9.0', 'version bumped to 0.9.0', RT.version);
 
   console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
   process.exit(fail === 0 ? 0 : 1);

@@ -13,7 +13,8 @@ A modular, namespaced calculator widget for WordPress. Everything renders inside
 methodology / E-E-A-T section, and WordPress embed guide.
 **Phase 8:** Production packaging — single-file build, enqueue snippet, and the
 affiliate replacement guide.
-**Phase 9 (current):** Centralised affiliate database at the top of the JS.
+**Phase 9:** Centralised affiliate database at the top of the JS.
+**Phase 10 (current):** One link per product (Amazon OneLink) — 9 links, not 27.
 
 ## Structure
 
@@ -419,7 +420,7 @@ node tests/step2-ui.test.js  #  67 assertions
 node tests/step3.test.js     #  90 assertions
 node tests/seo.test.js       #  86 assertions
 node tests/build.test.js     #  67 assertions
-node tests/affiliate.test.js #  48 assertions
+node tests/affiliate.test.js #  51 assertions
 ```
 
 `step1`: state defaults, slider↔input sync, mid-typing guard, snapping, all three
@@ -566,40 +567,45 @@ banner comment: `🚨 RIAJUL'S AFFILIATE DATABASE 🚨 / PASTE ALL YOUR AMAZON L
 ```js
 var RT_AFFILIATE_LINKS = {
   chair: {
-    budget:  { name, price, rating, links: { USD, GBP, CAD } },
-    mid:     { name, price, rating, links: { USD, GBP, CAD } },
-    premium: { name, price, rating, links: { USD, GBP, CAD } }
+    budget:  { name, price, rating, link: "https://amzn.to/..." },
+    mid:     { name, price, rating, link: "https://amzn.to/..." },
+    premium: { name, price, rating, link: "https://amzn.to/..." }
   },
-  desk:    { ... },
-  monitor: { ... }
+  desk:    { ... },   // 3 links
+  monitor: { ... }    // 3 links
 };
 ```
 
-Three levels — category → tier → product — with **no wrapper level**. 3 × 3 × 3 =
-**27 slots**. Nothing else in the file hardcodes an affiliate URL.
+**One link per product — 9 in total.** Amazon OneLink (or any geo-redirecting
+short link) forwards each visitor to their local storefront, so there is no
+per-currency URL to maintain.
 
 ### How a link is picked at runtime
 
-1. Active currency (`USD` / `GBP` / `CAD`) is read from state.
-2. The money allocated to that category selects the tier: `<250` budget,
+1. The money allocated to the category selects the tier: `<250` budget,
    `250–700` mid, `>700` premium.
-3. The URL is read from `RT_AFFILIATE_LINKS[category][tier].links[currency]`.
-4. Changing the currency toggle re-renders the cards with the new regional
-   links — no reload (subscribed to `rt:currencychange`).
+2. The URL is read from `RT_AFFILIATE_LINKS[category][tier].link`.
+
+`resolveAffiliateLink(product)` takes **no currency argument** — that omission is
+the guarantee, not an oversight. Currency still does its full job elsewhere:
+slider windows, budget amounts, percentages, CPCH, prices on the cards and the
+AEO prose all reformat between USD / GBP / CAD. It simply no longer reaches URL
+resolution.
 
 ### Guard rails (`tests/affiliate.test.js`)
 
-Bulk-editing 27 URLs by hand is exactly where typos hide, so every slot is
-asserted to be:
+Bulk-editing 9 URLs by hand is still where typos hide, so every slot is asserted
+to be:
 
-- a **full `https://www.amazon.…` URL** (bare `amzn.to` short links are rejected),
-- on the **correct storefront** for its key (`USD`→`.com`, `GBP`→`.co.uk`, `CAD`→`.ca`),
-- carrying a **`?tag=`** parameter,
-- paired with a **numeric** `price` and a `0–5` `rating`.
+- a **single** `link` string — a `links: { USD, GBP, CAD }` object fails the suite
+- a **full `https://` URL** on `amzn.to` **or** an `amazon.*` storefront
+- carrying a **`?tag=`** when a full product URL is used (an untagged link earns nothing)
+- paired with a **numeric** `price` and a `0–5` `rating`
+- **distinct** — duplicate links are reported, so a copy-paste slip is caught
 
-The suite also proves a mutable-DB path: editing one object value changes the
-rendered card with no code change, which is what makes "paste your links here"
-actually true.
+It also asserts the currency contract directly: switching USD → GBP → CAD leaves
+every `href` byte-identical while the price symbols change. That is the exact
+behaviour OneLink depends on, and the one most likely to regress.
 
 Presentation data (icons, category labels) lives in `CATEGORY_META` just below
 the database, so the object stays pure link/product data.
@@ -650,5 +656,6 @@ python3 -m http.server 8000
 - Phase 7 — SEO: JSON-LD, static fallbacks, methodology, WordPress guide. ✅
 - Phase 8 — Production packaging: single-file build, enqueue snippet, replacement guide. ✅
 - Phase 9 — Centralised affiliate database with link-integrity guard rails. ✅
+- Phase 10 — One link per product via Amazon OneLink; currency decoupled from URLs. ✅
 - Phase 8 (optional) — PHP shortcode/block package with server-side rendering of the
   personalised answer, so crawlers see the calculated result and not just the fallback.
