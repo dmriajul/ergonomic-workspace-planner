@@ -87,8 +87,8 @@ const boot = async () => {
      $('#rt-alloc-total').textContent);
 
   console.log('\n2b. Chips at default state');
-  ok($('#rt-metric-cpch').textContent.trim() === '\u2014',
-     'CPCH shows an em dash before hours are chosen', $('#rt-metric-cpch').textContent);
+  ok($('#rt-metric-cpch').textContent.trim() === 'Not yet',
+     'CPCH shows plain words before hours are chosen', $('#rt-metric-cpch').textContent);
   ok($('#rt-metric-cpch-note').textContent.includes('desk hours'),
      'CPCH note explains what is missing', $('#rt-metric-cpch-note').textContent);
   ok($('#rt-metric-risk').textContent.includes('Low'), 'risk chip Low at $350 chair',

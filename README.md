@@ -469,7 +469,7 @@ as though it were the visitor's.
 The fallback is preserved until a visitor actually generates a plan.
 `renderStep3UI(result, refs, { personaliseAnswer })` only replaces the paragraph when
 `calculatePlan()` runs, so boot and ordinary Step 1 input changes never overwrite
-crawlable copy with a "complete your profile" restatement.
+crawlable copy with a "fill in your details" restatement.
 
 ### Methodology / E-E-A-T section
 
@@ -477,7 +477,7 @@ crawlable copy with a "complete your profile" restatement.
 editorial content, not part of the widget) and documents:
 
 - **How We Calculate Your Budget** — the allocation table, every modifier, the 1% floor
-  and water-filling renormalisation.
+  and the share-evening step (renormalisation), all described in plain English.
 - **CPCH** — `budget ÷ (hours × 365 × 5)`, with the five-year service-life assumption
   stated.
 - **Posture risk** — chair tiers, hour penalties, pain points and the 0–2 / 3–5 / 6+ bands.
@@ -629,6 +629,32 @@ override them by accident nor inherit them.
 Changing the brand is a one-file job: override the tokens, leave the components
 untouched.
 
+## Copy tone and style (Phase 11)
+
+All visitor-facing copy follows one style guide, and `tests/*` assert the parts that
+matter so the tone cannot drift:
+
+- **No em dashes (U+2014) or en dashes (U+2013)** anywhere in shipped files, including
+  HTML comments, JS strings, CSS comments and the generated single file. Use a colon,
+  a comma, a full stop or brackets instead. Numeric ranges read "4 to 6 hrs", never
+  "4–6 hrs".
+- **Grade 6 to 8 conversational English**. Short sentences, active voice, second person.
+  "We split your budget" rather than "the budget is divided".
+- **Banned words**: *derived*, *randomised*, *comprehensive*, *utilize*. Use
+  *calculated*, *based on*, *use*.
+- **Friendly but honest disclaimers.** The medical and affiliate notes are warm and
+  readable while keeping the exact phrases the legal and SEO checks rely on:
+  `As an Amazon Associate`, `qualifying purchases`, `not medical advice`.
+- **Keywords stay, but they must read naturally**: `Ergonomic Desk Setup Budget`,
+  `OSHA standards`, `ISO 9241-5`, `Amazon Associate`, `Ergo Budget Ratio`,
+  `Cost-Per-Comfort-Hour`.
+- **Text only.** No ID, class, markup structure or JavaScript logic changes. Numbers,
+  formulas and thresholds are untouchable: 35/25/20/10/5/5, the +5 / +6 / +6 point
+  modifiers, the 1% floor, and the 0.41 / 0.63 height ratios.
+
+The same rules apply to the dynamically generated AEO answer in `buildAEOText()` and to
+the three FAQ answers in the `FAQPage` block.
+
 ## Conventions for upcoming phases
 
 1. Keep every selector inside `.rt-calc`; prefix classes with `rt-`.
@@ -657,5 +683,7 @@ python3 -m http.server 8000
 - Phase 8 — Production packaging: single-file build, enqueue snippet, replacement guide. ✅
 - Phase 9 — Centralised affiliate database with link-integrity guard rails. ✅
 - Phase 10 — One link per product via Amazon OneLink; currency decoupled from URLs. ✅
+- Phase 11 — Human-sounding copywriting rewrite: plain English, zero dashes, friendly
+  disclaimers, simplified methodology. ✅
 - Phase 8 (optional) — PHP shortcode/block package with server-side rendering of the
   personalised answer, so crawlers see the calculated result and not just the fallback.

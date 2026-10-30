@@ -1,11 +1,11 @@
 /* ==========================================================================
    rt-calc.css
-   Smart Ergonomic Calculator — scoped base + skeleton (layer 1)
+   Smart Ergonomic Calculator: scoped base + skeleton (layer 1)
    --------------------------------------------------------------------------
    Rules of engagement:
    1. Nothing outside `.rt-calc` is styled. No body/html resets, no h1-h6 base.
    2. All class names are prefixed with `rt-` so theme CSS cannot collide.
-   3. This file is presentation only — no JavaScript, no component modules.
+   3. This file is presentation only: no JavaScript, no component modules.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -144,7 +144,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   4. Static step rail (no JS — purely a progress landmark)
+   4. Static step rail (no JS, purely a progress landmark)
    -------------------------------------------------------------------------- */
 .rt-calc__rail {
   display: flex;
@@ -272,7 +272,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   6. Mount points — intentionally empty until their modules land
+   6. Mount points: intentionally empty until their modules land
    -------------------------------------------------------------------------- */
 .rt-calc__slot {
   display: grid;
@@ -358,7 +358,7 @@
 }
 
 /* ==========================================================================
-   9. STEP 1 — ERGONOMIC PROFILING
+   9. STEP 1: ERGONOMIC PROFILING
    --------------------------------------------------------------------------
    Module styles for #rt-slot-inputs. Still presentation-only: nothing here
    depends on JS. Selection states are driven by :checked where CSS alone can
@@ -372,7 +372,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   9.1 Fieldsets — sections inside the Step 1 card
+   9.1 Fieldsets: sections inside the Step 1 card
    -------------------------------------------------------------------------- */
 .rt-fieldset {
   display: grid;
@@ -416,7 +416,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   9.2 Budget head — big amount + currency toggle
+   9.2 Budget head: big amount + currency toggle
    -------------------------------------------------------------------------- */
 .rt-budget__head {
   display: flex;
@@ -446,7 +446,7 @@
 }
 
 /* Currency glyphs: exactly one is visible, chosen by :has() on the radios.
-   Fallback (no :has()) simply shows all three glyphs — layout still holds. */
+   Fallback (no :has()) simply shows all three glyphs, and layout still holds. */
 .rt-cur {
   font-size: 0.52em;
   font-weight: var(--rt-weight-semibold);
@@ -471,7 +471,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   9.3 Segmented control — currency
+   9.3 Segmented control: currency
    -------------------------------------------------------------------------- */
 .rt-seg {
   display: inline-flex;
@@ -531,7 +531,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   9.4 Budget control — slider + synced number input
+   9.4 Budget control: slider + synced number input
    -------------------------------------------------------------------------- */
 .rt-budget__control {
   display: grid;
@@ -612,7 +612,7 @@
   color: var(--rt-text-muted);
 }
 
-/* Custom range — track, fill and thumb. */
+/* Custom range: track, fill and thumb. */
 .rt-range {
   --rt-range-fill: 16.7%; /* default: (1000 - 200) / (5000 - 200) */
   width: 100%;
@@ -723,7 +723,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   9.5 Field grid — dropdowns
+   9.5 Field grid: dropdowns
    -------------------------------------------------------------------------- */
 .rt-field-grid {
   display: grid;
@@ -867,7 +867,7 @@
   color: var(--rt-text-muted);
 }
 
-/* Check indicator — a ring that fills and pops a tick when checked. */
+/* Check indicator: a ring that fills and pops a tick when checked. */
 .rt-pain-card__check {
   position: relative;
   display: grid;
@@ -1045,7 +1045,7 @@
 }
 
 /* ==========================================================================
-   11. STEP 2 — BUDGET PREVIEW (allocation bars + metric chips)
+   11. STEP 2: BUDGET PREVIEW (allocation bars + metric chips)
    --------------------------------------------------------------------------
    Progress bars read their width from --rt-alloc (set inline by JS, defaulted
    in CSS so the static markup renders correctly with no script). Only `width`
@@ -1325,7 +1325,7 @@
 }
 
 /* ==========================================================================
-   12. STEP 3 — AEO ANSWER BOX, GEAR CARDS, DISCLOSURE
+   12. STEP 3: AEO ANSWER BOX, GEAR CARDS, DISCLOSURE
    ========================================================================== */
 
 /* --------------------------------------------------------------------------

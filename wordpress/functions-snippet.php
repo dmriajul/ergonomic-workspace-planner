@@ -1,6 +1,6 @@
 <?php
 /**
- * Smart Ergonomic Budget Calculator — WordPress enqueue snippet
+ * Smart Ergonomic Budget Calculator: WordPress enqueue snippet
  * ---------------------------------------------------------------------------
  * RECOMMENDED METHOD. Loads the CSS/JS as separate, cacheable files instead of
  * inlining them into a Custom HTML block.
@@ -24,13 +24,13 @@
  *    shortcode at the bottom and use [ergonomic_calculator].
  *
  * --- NOTES ---------------------------------------------------------------
- * • rt-tokens.css MUST load before rt-calc.css — the component layer consumes
+ * • rt-tokens.css MUST load before rt-calc.css, because the component layer consumes
  *   those custom properties. The dependency array below enforces the order.
  * • Bump $ver whenever you edit the files, otherwise browsers and page caches
  *   will keep serving the old copy.
  * • Do NOT enqueue demo-page.css: it is the local preview harness only.
  * • If your SEO plugin already outputs a SoftwareApplication schema node,
- *   do not add ours as well — duplicate nodes on one URL can invalidate the
+ *   do not add ours as well, since duplicate nodes on one URL can invalidate the
  *   rich result.
  */
 

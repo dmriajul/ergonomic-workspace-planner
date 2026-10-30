@@ -133,7 +133,7 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
   const staticFallback = single.match(/<p class="rt-aeo__text"[^>]*>([\s\S]*?)<\/p>/);
   ok(staticFallback !== null, 'static AEO paragraph present in the build');
   const fallbackText = staticFallback[1].replace(/\s+/g, ' ').trim();
-  ok(/Complete your profile above/.test(fallbackText), 'fallback tells the visitor what to do');
+  ok(/Fill in your details above/.test(fallbackText), 'fallback tells the visitor what to do');
   ok(/35%/.test(fallbackText) && /25%/.test(fallbackText) && /20%/.test(fallbackText),
      'fallback carries the 35/25/20 guidance', fallbackText.slice(0, 80));
   ok(/ergonomic chair/i.test(fallbackText), 'fallback names the chair (keyword)');
@@ -169,7 +169,7 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
   const w = runDom.window, d = w.document;
   const RT = w.RT_Calculator;
   ok(typeof RT === 'object', 'RT_Calculator boots from the inlined script');
-  ok(RT.version === '0.9.0', 'version 0.9.0', RT.version);
+  ok(RT.version === '0.10.0', 'version 0.10.0', RT.version);
   ok(RT.getState().budget === 1000 && RT.getState().currency === 'USD',
      'default state correct', RT.getState());
 

@@ -116,7 +116,7 @@ const staticDoc = staticDom.window.document;
      'static copy carries the 35/25/20 guidance', staticText.slice(0, 90));
   ok(/ergonomic chair/i.test(staticText) && /desk/i.test(staticText) && /monitor/i.test(staticText),
      'static copy names the key categories (keywords)');
-  ok(/Complete your profile/i.test(staticText),
+  ok(/Fill in your details/i.test(staticText),
      'static copy tells the reader what to do next');
   ok(!/\$\d/.test(staticText),
      'static copy quotes no invented personal budget', staticText.match(/\$[\d,]+/));
@@ -142,14 +142,15 @@ const staticDoc = staticDom.window.document;
   ok(/Medical disclaimer/i.test(methodText), 'includes a medical disclaimer');
   ok(/Affiliate disclosure/i.test(methodText), 'includes an affiliate disclosure');
   ok(/Amazon Associate/i.test(methodText), 'affiliate disclosure names Amazon Associates');
-  ok(/water-filling/i.test(methodText), 'documents the renormalisation method');
+  ok(/add\s+up to exactly 100%/.test(methodText),
+     'documents the renormalisation step in plain words');
   ok(/365/.test(methodText) && /0\.41/.test(methodText) && /0\.63/.test(methodText),
      'documents the CPCH and anthropometric constants');
 
   console.log('\n5b. Methodology claims match the shipped code');
   ok(/chair 35%/.test(methodText) && /desk 25%/.test(methodText),
      'documented baseline matches ALLOCATION_BASE');
-  ok(/No category may fall below\s+1%/.test(methodText), 'documents the 1% floor');
+  ok(/No part can ever drop below 1%/.test(methodText), 'documents the 1% floor');
   ['0.35', '0.25', '0.2', '0.1'].forEach(v => {
     ok(JS.includes(v), `code contains the documented ratio ${v}`);
   });
@@ -218,7 +219,7 @@ const staticDoc = staticDom.window.document;
   ok(typeof RT === 'object', 'widget initialises with JSON-LD present');
 
   const before = d.querySelector('#rt-aeo-answer-text').textContent;
-  ok(/Complete your profile/i.test(before),
+  ok(/Fill in your details/i.test(before),
      'static fallback survives initialisation (not wiped on boot)');
 
   const fire = (el, t) => el.dispatchEvent(new w.Event(t, { bubbles: true }));
@@ -226,7 +227,7 @@ const staticDoc = staticDom.window.document;
   const hrs = d.querySelector('#rt-hours'); hrs.value = '6to8'; fire(hrs, 'change');
   const wk = d.querySelector('#rt-work'); wk.value = 'design'; fire(wk, 'change');
   const stillStatic = d.querySelector('#rt-aeo-answer-text').textContent;
-  ok(/Complete your profile/i.test(stillStatic),
+  ok(/Fill in your details/i.test(stillStatic),
      'fallback also survives Step 1 input changes (no plan generated yet)');
 
   d.querySelector('#rt-calculate').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));

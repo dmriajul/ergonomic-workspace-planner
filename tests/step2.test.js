@@ -310,7 +310,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
   await new Promise(r => setTimeout(r, 0));
   freshDom.window.RT_Calculator.debug = true; // opt-in dump, as in the live API
   freshDom.window.RT_Calculator.updateStep2UI();
-  ok(freshLogs.some(l => l.includes('pick daily hours')),
+  ok(freshLogs.some(l => l.includes('pick your desk hours')),
      'logs a prompt instead of "null" before hours are chosen', freshLogs.slice(2, 6));
   ok(freshDom.window.RT_Calculator.getState().budget === 1000,
      'fresh instance still starts at the documented default');
@@ -331,7 +331,7 @@ const sumOf = obj => Object.keys(obj).reduce((t, k) => t + obj[k], 0);
     const body = code.slice(start, start + 1400);
     return !/document\.|querySelector|\.style\./.test(body);
   }), 'core functions are DOM-free (pure)');
-  ok(RT.version === '0.9.0', 'version bumped to 0.9.0', RT.version);
+  ok(RT.version === '0.10.0', 'version bumped to 0.10.0', RT.version);
   ok(RT.debug === true, 'debug flag is opt-in and readable', RT.debug);
 
   console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);
