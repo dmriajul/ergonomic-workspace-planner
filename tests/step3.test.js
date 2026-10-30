@@ -240,8 +240,10 @@ const fillValid = (doc, fire, w) => {
   gbp.checked = true; $('#rt-cur-usd').checked = false; fire(gbp, 'change');
   ok(chairCard().querySelector('.rt-product__price').textContent.startsWith('£'),
      'prices reformat to £', chairCard().querySelector('.rt-product__price').textContent);
-  ok(chairCard().querySelector('.rt-product__cta').getAttribute('href') === 'https://amzn.to/uk-link',
-     'GBP uses the UK affiliate link', chairCard().querySelector('.rt-product__cta').getAttribute('href'));
+  ok(/amazon\.co\.uk/.test(chairCard().querySelector('.rt-product__cta').getAttribute('href')),
+     'GBP uses the UK storefront link', chairCard().querySelector('.rt-product__cta').getAttribute('href'));
+  ok(/tag=riajultech-21/.test(chairCard().querySelector('.rt-product__cta').getAttribute('href')),
+     'GBP link carries the UK associate tag');
   ok($('#rt-aeo-answer-text').textContent.includes('£'),
      'AEO prose reformats to £ too');
 
@@ -249,21 +251,19 @@ const fillValid = (doc, fire, w) => {
   cad.checked = true; gbp.checked = false; fire(cad, 'change');
   ok(chairCard().querySelector('.rt-product__price').textContent.startsWith('C$'),
      'prices reformat to C$', chairCard().querySelector('.rt-product__price').textContent);
-  ok(chairCard().querySelector('.rt-product__cta').getAttribute('href') === 'https://amzn.to/ca-link',
-     'CAD uses the CA affiliate link');
+  ok(/amazon\.ca/.test(chairCard().querySelector('.rt-product__cta').getAttribute('href')),
+     'CAD uses the CA storefront link', chairCard().querySelector('.rt-product__cta').getAttribute('href'));
 
   const usd = $('#rt-cur-usd');
   usd.checked = true; cad.checked = false; fire(usd, 'change');
-  ok(chairCard().querySelector('.rt-product__cta').getAttribute('href') === 'https://amzn.to/us-link',
-     'USD uses the US affiliate link');
+  ok(/amazon\.com\/dp\//.test(chairCard().querySelector('.rt-product__cta').getAttribute('href')),
+     'USD uses the US storefront link', chairCard().querySelector('.rt-product__cta').getAttribute('href'));
 
-  console.log('\n6b. Missing regional link falls back safely');
-  const productDom = new JSDOM('<div class="rt-calc"></div>');
-  const noLink = { name: 'X', price: 100, rating: 4, links: {} };
-  ok(productDom.window.RT_Calculator === undefined, 'sanity: blank doc has no API');
-  const fallback = { links: { USD: 'https://amzn.to/us-link' } };
-  ok(RT.products.chair.tiers.budget.links.GBP === 'https://amzn.to/uk-link',
-     'catalogue ships all three regional links');
+  console.log('\n6b. Database shape');
+  ok(RT.affiliateLinks.chair.budget.links.GBP.indexOf('amazon.co.uk') !== -1,
+     'catalogue ships all three regional links (no wrapper level)',
+     RT.affiliateLinks.chair.budget.links.GBP);
+  ok(RT.products === RT.affiliateLinks, 'legacy .products alias still points at the DB');
 
   /* ================= 7. Disclosure ================= */
   console.log('\n7. Affiliate disclosure');
@@ -325,9 +325,11 @@ const fillValid = (doc, fire, w) => {
      'no HTML-string injection anywhere');
   ok(!/api[_-]?key|secret|password|access[_-]?token/i.test(code),
      'no credentials in the bundle');
-  ok((code.match(/amzn\.to/g) || []).length >= 3, 'links are clearly mock amzn.to placeholders',
-     (code.match(/amzn\.to/g) || []).length);
-  ok(RT.version === '0.7.0', 'version bumped to 0.7.0', RT.version);
+  ok((code.match(/https:\/\/www\.amazon\./g) || []).length === 27,
+     'exactly 27 regional product URLs, all full https:// links',
+     (code.match(/https:\/\/www\.amazon\./g) || []).length);
+  ok(!/https:\/\/amzn\.to/.test(code), 'no bare amzn.to short links remain');
+  ok(RT.version === '0.8.0', 'version bumped to 0.8.0', RT.version);
 
   /* ================= 11. Degrades without Step 3 markup ================= */
   console.log('\n11. Robustness');

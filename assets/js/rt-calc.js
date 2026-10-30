@@ -55,6 +55,154 @@
 (function (window, document) {
   "use strict";
 
+  /* ==========================================================================
+     ======================================================================
+     🚨 RIAJUL'S AFFILIATE DATABASE 🚨
+     PASTE ALL YOUR AMAZON LINKS HERE
+     ======================================================================
+     ----------------------------------------------------------------------
+     EVERY product link on the site comes from this one object. Nothing else
+     in this file hardcodes an affiliate URL, so this is the only place you
+     need to edit to swap products or links.
+
+     STRUCTURE — exactly three levels:
+
+       RT_AFFILIATE_LINKS
+         └── category   "chair" | "desk" | "monitor"
+               └── tier   "budget" | "mid" | "premium"
+                     ├── name    display name on the card
+                     ├── price   NUMBER only, no symbol or comma
+                     ├── rating  0–5, one decimal
+                     └── links   USD | GBP | CAD  → full amazon URL
+
+     HOW A LINK IS CHOSEN AT RUNTIME (all automatic):
+       1. The active currency (USD / GBP / CAD) is read from state.
+       2. The money allocated to the category picks the tier:
+            under 250        → budget
+            250 up to 700    → mid
+            above 700        → premium
+       3. The URL is read from [category][tier].links[currency].
+       4. Switching the currency toggle re-renders the cards with the new
+          regional links — no page reload.
+
+     RULES WHEN EDITING
+       • Use full URLs beginning https://  (no bare "amzn.to/xyz").
+       • Keep the region matched to the key: USD → amazon.com,
+         GBP → amazon.co.uk, CAD → amazon.ca. A test enforces this.
+       • Keep your own associate tag in the ?tag= parameter on every link.
+       • price must stay a number: 1599, not "$1,599".
+       • Add or remove tiers only together with PRODUCT_TIERS below.
+     ========================================================================== */
+
+  var RT_AFFILIATE_LINKS = {
+    chair: {
+      budget: {
+        name: "ErgoBudget Mesh Chair",
+        price: 150,
+        rating: 4.3,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1CHAIR1?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1CHAIR1?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1CHAIR1?tag=riajultech-20"
+        }
+      },
+      mid: {
+        name: "Herman Miller Sayl",
+        price: 450,
+        rating: 4.6,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1CHAIR2?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1CHAIR2?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1CHAIR2?tag=riajultech-20"
+        }
+      },
+      premium: {
+        name: "Steelcase Gesture",
+        price: 1200,
+        rating: 4.8,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1CHAIR3?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1CHAIR3?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1CHAIR3?tag=riajultech-20"
+        }
+      }
+    },
+    desk: {
+      budget: {
+        name: "FlexiSpot E1 Standing Desk",
+        price: 220,
+        rating: 4.4,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1DESK001?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1DESK001?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1DESK001?tag=riajultech-20"
+        }
+      },
+      mid: {
+        name: "Uplift V2 Standing Desk",
+        price: 600,
+        rating: 4.7,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1DESK002?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1DESK002?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1DESK002?tag=riajultech-20"
+        }
+      },
+      premium: {
+        name: "Fully Jarvis Bamboo",
+        price: 950,
+        rating: 4.6,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1DESK003?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1DESK003?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1DESK003?tag=riajultech-20"
+        }
+      }
+    },
+    monitor: {
+      budget: {
+        name: "Dell P2422H 24\u2033",
+        price: 180,
+        rating: 4.5,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1MONIT01?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1MONIT01?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1MONIT01?tag=riajultech-20"
+        }
+      },
+      mid: {
+        name: "LG 27UP850 4K 27\u2033",
+        price: 500,
+        rating: 4.6,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1MONIT02?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1MONIT02?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1MONIT02?tag=riajultech-20"
+        }
+      },
+      premium: {
+        name: "Apple Studio Display 27\u2033",
+        price: 1599,
+        rating: 4.4,
+        links: {
+          USD: "https://www.amazon.com/dp/B0C1MONIT03?tag=riajultech-20",
+          GBP: "https://www.amazon.co.uk/dp/B0C1MONIT03?tag=riajultech-21",
+          CAD: "https://www.amazon.ca/dp/B0C1MONIT03?tag=riajultech-20"
+        }
+      }
+    }
+  };
+
+  /**
+   * Presentation metadata kept OUT of the affiliate database, so the object
+   * above stays pure link/product data that is safe to bulk-edit.
+   */
+  var CATEGORY_META = {
+    chair: { icon: "\uD83E\uDE91", label: "Chair" },
+    desk: { icon: "\uD83D\uDDA5\uFE0F", label: "Desk" },
+    monitor: { icon: "\uD83D\uDCFA", label: "Monitor" }
+  };
+
   /* =========================================================================
      1. Configuration — single source of truth for ranges and ratios
      ========================================================================= */
@@ -1259,123 +1407,7 @@
      currency symbols can never inject markup.
      ========================================================================= */
 
-  /* ---- 9.1 Affiliate catalogue (MOCK DATA) ------------------------------- */
-
-  /**
-   * Placeholder catalogue. Prices are illustrative, and every link is a mock
-   * `amzn.to` URL — replace `links` with real tracking links per region before
-   * going live. `tier` is the key used by selectProductTier().
-   */
-  var AFFILIATE_PRODUCTS = {
-    chair: {
-      icon: "\uD83E\uDE91",
-      label: "Chair",
-      tiers: {
-        budget: {
-          name: "ErgoBudget Mesh Chair",
-          price: 150,
-          rating: 4.3,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        },
-        mid: {
-          name: "Herman Miller Sayl",
-          price: 450,
-          rating: 4.6,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        },
-        premium: {
-          name: "Steelcase Gesture",
-          price: 1200,
-          rating: 4.8,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        }
-      }
-    },
-    desk: {
-      icon: "\uD83D\uDDA5\uFE0F",
-      label: "Desk",
-      tiers: {
-        budget: {
-          name: "FlexiSpot E1 Standing Desk",
-          price: 220,
-          rating: 4.4,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        },
-        mid: {
-          name: "Uplift V2 Standing Desk",
-          price: 600,
-          rating: 4.7,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        },
-        premium: {
-          name: "Fully Jarvis Bamboo",
-          price: 950,
-          rating: 4.6,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        }
-      }
-    },
-    monitor: {
-      icon: "\uD83D\uDCFA",
-      label: "Monitor",
-      tiers: {
-        budget: {
-          name: "Dell P2422H 24\u2033",
-          price: 180,
-          rating: 4.5,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        },
-        mid: {
-          name: "LG 27UP850 4K 27\u2033",
-          price: 500,
-          rating: 4.6,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        },
-        premium: {
-          name: "Apple Studio Display 27\u2033",
-          price: 1599,
-          rating: 4.4,
-          links: {
-            USD: "https://amzn.to/us-link",
-            GBP: "https://amzn.to/uk-link",
-            CAD: "https://amzn.to/ca-link"
-          }
-        }
-      }
-    }
-  };
+  /* ---- 9.1 Affiliate catalogue lives at the TOP of this file ------------- */
 
   /** Categories that get a product card, in display order. */
   var PRODUCT_CATEGORIES = ["chair", "desk", "monitor"];
@@ -1546,12 +1578,13 @@
    * @return {HTMLLIElement|null}
    */
   function buildProductCard(category, allocation, amounts, currency) {
-    var catalogue = AFFILIATE_PRODUCTS[category];
-    if (!catalogue) return null;
+    var productGroup = RT_AFFILIATE_LINKS[category];
+    if (!productGroup) return null;
 
+    // 1. money allocated to this category → 2. tier → 3. product in that tier.
     var amount = amounts[category] || 0;
     var tier = selectProductTier(amount);
-    var product = catalogue.tiers[tier.key];
+    var product = productGroup[tier.key];
     if (!product) return null;
 
     var doc = document;
@@ -1567,11 +1600,11 @@
     var icon = doc.createElement("span");
     icon.className = "rt-product__icon";
     icon.setAttribute("aria-hidden", "true");
-    icon.textContent = catalogue.icon;
+    icon.textContent = (CATEGORY_META[category] || {}).icon || "";
 
     var categoryLabel = doc.createElement("span");
     categoryLabel.className = "rt-product__category";
-    categoryLabel.textContent = catalogue.label;
+    categoryLabel.textContent = (CATEGORY_META[category] || {}).label || category;
 
     var tierBadge = doc.createElement("span");
     tierBadge.className = "rt-product__tier";
@@ -1858,7 +1891,7 @@
 
   var RT_Calculator = (window.RT_Calculator = window.RT_Calculator || {});
 
-  RT_Calculator.version = "0.7.0";
+  RT_Calculator.version = "0.8.0";
   RT_Calculator.getState = getState;
 
   // Step 1
@@ -1886,7 +1919,11 @@
   RT_Calculator.renderProducts = renderProducts;
   RT_Calculator.renderStep3UI = renderStep3UI;
   RT_Calculator.calculatePlan = calculatePlan;
-  RT_Calculator.products = AFFILIATE_PRODUCTS;
+  /** The single affiliate database — edit it at the top of this file. */
+  RT_Calculator.affiliateLinks = RT_AFFILIATE_LINKS;
+  /** @deprecated alias kept so older snippets keep working. */
+  RT_Calculator.products = RT_AFFILIATE_LINKS;
+  RT_Calculator.categoryMeta = CATEGORY_META;
 
   /** Set true to restore the console dump. Off by default: the UI is the output. */
   RT_Calculator.debug = false;

@@ -108,7 +108,7 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
   ok(inlineJs.length >= js.length * 0.98,
      'inline JS carries the full controller', [inlineJs.length, js.length]);
   ['buildAEOText', 'calculateAllocation', 'calculateCPCH', 'calculatePostureRisk',
-   'AFFILIATE_PRODUCTS', 'renderProducts', 'calculatePlan'].forEach(fn => {
+   'RT_AFFILIATE_LINKS', 'renderProducts', 'calculatePlan'].forEach(fn => {
     ok(inlineJs.includes(fn), `inline JS includes ${fn}`);
   });
   ok(single.includes('rt-calc" id="rt-calculator"') || single.includes('class="rt-calc" id="rt-calculator"'),
@@ -138,8 +138,8 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
      'fallback carries the 35/25/20 guidance', fallbackText.slice(0, 80));
   ok(/ergonomic chair/i.test(fallbackText), 'fallback names the chair (keyword)');
 
-  const amznCount = (inlineJs.match(/https:\/\/amzn\.to\//g) || []).length;
-  ok(amznCount === 27, '27 affiliate link placeholders present', amznCount);
+  const amazonCount = (inlineJs.match(/https:\/\/www\.amazon\./g) || []).length;
+  ok(amazonCount === 27, '27 regional affiliate URLs present in the build', amazonCount);
   ok(single.includes('https://example.com') === false,
      'build does not embed the example.com canonical (head is not copied)');
 
@@ -169,7 +169,7 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
   const w = runDom.window, d = w.document;
   const RT = w.RT_Calculator;
   ok(typeof RT === 'object', 'RT_Calculator boots from the inlined script');
-  ok(RT.version === '0.7.0', 'version 0.7.0', RT.version);
+  ok(RT.version === '0.8.0', 'version 0.8.0', RT.version);
   ok(RT.getState().budget === 1000 && RT.getState().currency === 'USD',
      'default state correct', RT.getState());
 
@@ -208,13 +208,14 @@ const stripHtmlComments = s => s.replace(/<!--[\s\S]*?-->/g, '');
   ok(/demo-page\.css/.test(php), 'PHP snippet warns about the demo stylesheet');
 
   const guide = fs.readFileSync(GUIDE, 'utf8');
-  const guideRows = (guide.match(/^\| `\w+\.tiers\.\w+\.links\.[A-Z]{3}`/gm) || []).length;
+  const guideRows = (guide.match(/^\| `RT_AFFILIATE_LINKS\.\w+\.\w+\.links\.[A-Z]{3}`/gm) || []).length;
   ok(guideRows === 27, 'guide lists all 27 affiliate slots', guideRows);
   ['chair', 'desk', 'monitor'].forEach(cat => {
-    ok(guide.includes(`\`${cat}.tiers.budget.links.USD\``), `guide covers ${cat} slots`);
+    ok(guide.includes(`${cat}.budget.links.USD`), `guide covers ${cat} slots`);
   });
   ok(/example\.com/.test(guide), 'guide covers the canonical placeholder');
-  ok(/never reuse another associate/i.test(guide), 'guide warns about tracking tags');
+  ok(/another publisher's tag|another associate/i.test(guide),
+     'guide warns not to reuse someone else\'s tracking tag');
   ok(/line \d+/.test(guide), 'guide gives line numbers');
 
   console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} \u2014 ${pass} passed, ${fail} failed`);

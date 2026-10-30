@@ -1,88 +1,91 @@
 # Replace these placeholders before publishing
 
-Everything below ships as **mock data**. Nothing here is a real product link.
-The calculator works without these changes, but visitors would be sent to dead
-`amzn.to` placeholders.
+Everything below is **mock data**: realistic-looking Amazon URLs, real product
+names, invented ASINs, and `riajultech-*` tags that are **not** your account.
+Nothing here is a working affiliate link.
 
 ---
 
-## 1. The 27 Amazon affiliate links (required)
+## 1. The affiliate database (the only place you edit links)
 
-All of them live in one object in **`assets/js/rt-calc.js`** (or the inline
-`<script>` of `wordpress/single-file.html`) — the `AFFILIATE_PRODUCTS`
-declaration, starting around **line 1260**.
+All 27 links live in **one object at the very top of `assets/js/rt-calc.js`**
+(or the inline `<script>` of `wordpress/single-file.html`). Search for:
 
-Shape:
+```
+RIAJUL'S AFFILIATE DATABASE
+```
+
+Structure — three levels, no wrapper:
 
 ```js
-var AFFILIATE_PRODUCTS = {
+var RT_AFFILIATE_LINKS = {
   chair: {
-    tiers: {
-      budget:  { name, price, rating, links: { USD: "...", GBP: "...", CAD: "..." } },
-      mid:     { ... },
-      premium: { ... }
-    }
+    budget:  { name, price, rating, links: { USD, GBP, CAD } },
+    mid:     { name, price, rating, links: { USD, GBP, CAD } },
+    premium: { name, price, rating, links: { USD, GBP, CAD } }
   },
   desk:    { ... },
   monitor: { ... }
 };
 ```
 
-There are **3 categories x 3 tiers x 3 currencies = 27 slots**. Every one is
-currently `https://amzn.to/us-link`, `.../uk-link` or `.../ca-link` — three
-distinct placeholder strings reused 9 times each.
+**3 categories x 3 tiers x 3 currencies = 27 slots.**
 
-Replace each `links.USD` / `links.GBP` / `links.CAD` with the real link for
-**that product on that regional storefront** (amazon.com / amazon.co.uk /
-amazon.ca). Use your own tracking tag; never reuse another associate's.
-
-| Slot | Where | Current placeholder |
+| Slot | Where | Current mock URL |
 | --- | --- | --- |
-| `chair.tiers.budget.links.USD` | `rt-calc.js` line 1279 | `https://amzn.to/us-link` |
-| `chair.tiers.budget.links.GBP` | `rt-calc.js` line 1280 | `https://amzn.to/uk-link` |
-| `chair.tiers.budget.links.CAD` | `rt-calc.js` line 1281 | `https://amzn.to/ca-link` |
-| `chair.tiers.mid.links.USD` | `rt-calc.js` line 1289 | `https://amzn.to/us-link` |
-| `chair.tiers.mid.links.GBP` | `rt-calc.js` line 1290 | `https://amzn.to/uk-link` |
-| `chair.tiers.mid.links.CAD` | `rt-calc.js` line 1291 | `https://amzn.to/ca-link` |
-| `chair.tiers.premium.links.USD` | `rt-calc.js` line 1299 | `https://amzn.to/us-link` |
-| `chair.tiers.premium.links.GBP` | `rt-calc.js` line 1300 | `https://amzn.to/uk-link` |
-| `chair.tiers.premium.links.CAD` | `rt-calc.js` line 1301 | `https://amzn.to/ca-link` |
-| `desk.tiers.budget.links.USD` | `rt-calc.js` line 1315 | `https://amzn.to/us-link` |
-| `desk.tiers.budget.links.GBP` | `rt-calc.js` line 1316 | `https://amzn.to/uk-link` |
-| `desk.tiers.budget.links.CAD` | `rt-calc.js` line 1317 | `https://amzn.to/ca-link` |
-| `desk.tiers.mid.links.USD` | `rt-calc.js` line 1325 | `https://amzn.to/us-link` |
-| `desk.tiers.mid.links.GBP` | `rt-calc.js` line 1326 | `https://amzn.to/uk-link` |
-| `desk.tiers.mid.links.CAD` | `rt-calc.js` line 1327 | `https://amzn.to/ca-link` |
-| `desk.tiers.premium.links.USD` | `rt-calc.js` line 1335 | `https://amzn.to/us-link` |
-| `desk.tiers.premium.links.GBP` | `rt-calc.js` line 1336 | `https://amzn.to/uk-link` |
-| `desk.tiers.premium.links.CAD` | `rt-calc.js` line 1337 | `https://amzn.to/ca-link` |
-| `monitor.tiers.budget.links.USD` | `rt-calc.js` line 1351 | `https://amzn.to/us-link` |
-| `monitor.tiers.budget.links.GBP` | `rt-calc.js` line 1352 | `https://amzn.to/uk-link` |
-| `monitor.tiers.budget.links.CAD` | `rt-calc.js` line 1353 | `https://amzn.to/ca-link` |
-| `monitor.tiers.mid.links.USD` | `rt-calc.js` line 1361 | `https://amzn.to/us-link` |
-| `monitor.tiers.mid.links.GBP` | `rt-calc.js` line 1362 | `https://amzn.to/uk-link` |
-| `monitor.tiers.mid.links.CAD` | `rt-calc.js` line 1363 | `https://amzn.to/ca-link` |
-| `monitor.tiers.premium.links.USD` | `rt-calc.js` line 1371 | `https://amzn.to/us-link` |
-| `monitor.tiers.premium.links.GBP` | `rt-calc.js` line 1372 | `https://amzn.to/uk-link` |
-| `monitor.tiers.premium.links.CAD` | `rt-calc.js` line 1373 | `https://amzn.to/ca-link` |
+| `RT_AFFILIATE_LINKS.chair.budget.links.USD` | `rt-calc.js` line 104 | `https://www.amazon.com/dp/B0C1CHAIR1?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.chair.budget.links.GBP` | `rt-calc.js` line 105 | `https://www.amazon.co.uk/dp/B0C1CHAIR1?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.chair.budget.links.CAD` | `rt-calc.js` line 106 | `https://www.amazon.ca/dp/B0C1CHAIR1?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.chair.mid.links.USD` | `rt-calc.js` line 114 | `https://www.amazon.com/dp/B0C1CHAIR2?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.chair.mid.links.GBP` | `rt-calc.js` line 115 | `https://www.amazon.co.uk/dp/B0C1CHAIR2?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.chair.mid.links.CAD` | `rt-calc.js` line 116 | `https://www.amazon.ca/dp/B0C1CHAIR2?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.chair.premium.links.USD` | `rt-calc.js` line 124 | `https://www.amazon.com/dp/B0C1CHAIR3?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.chair.premium.links.GBP` | `rt-calc.js` line 125 | `https://www.amazon.co.uk/dp/B0C1CHAIR3?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.chair.premium.links.CAD` | `rt-calc.js` line 126 | `https://www.amazon.ca/dp/B0C1CHAIR3?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.desk.budget.links.USD` | `rt-calc.js` line 136 | `https://www.amazon.com/dp/B0C1DESK001?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.desk.budget.links.GBP` | `rt-calc.js` line 137 | `https://www.amazon.co.uk/dp/B0C1DESK001?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.desk.budget.links.CAD` | `rt-calc.js` line 138 | `https://www.amazon.ca/dp/B0C1DESK001?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.desk.mid.links.USD` | `rt-calc.js` line 146 | `https://www.amazon.com/dp/B0C1DESK002?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.desk.mid.links.GBP` | `rt-calc.js` line 147 | `https://www.amazon.co.uk/dp/B0C1DESK002?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.desk.mid.links.CAD` | `rt-calc.js` line 148 | `https://www.amazon.ca/dp/B0C1DESK002?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.desk.premium.links.USD` | `rt-calc.js` line 156 | `https://www.amazon.com/dp/B0C1DESK003?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.desk.premium.links.GBP` | `rt-calc.js` line 157 | `https://www.amazon.co.uk/dp/B0C1DESK003?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.desk.premium.links.CAD` | `rt-calc.js` line 158 | `https://www.amazon.ca/dp/B0C1DESK003?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.monitor.budget.links.USD` | `rt-calc.js` line 168 | `https://www.amazon.com/dp/B0C1MONIT01?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.monitor.budget.links.GBP` | `rt-calc.js` line 169 | `https://www.amazon.co.uk/dp/B0C1MONIT01?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.monitor.budget.links.CAD` | `rt-calc.js` line 170 | `https://www.amazon.ca/dp/B0C1MONIT01?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.monitor.mid.links.USD` | `rt-calc.js` line 178 | `https://www.amazon.com/dp/B0C1MONIT02?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.monitor.mid.links.GBP` | `rt-calc.js` line 179 | `https://www.amazon.co.uk/dp/B0C1MONIT02?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.monitor.mid.links.CAD` | `rt-calc.js` line 180 | `https://www.amazon.ca/dp/B0C1MONIT02?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.monitor.premium.links.USD` | `rt-calc.js` line 188 | `https://www.amazon.com/dp/B0C1MONIT03?tag=riajultech-20` |
+| `RT_AFFILIATE_LINKS.monitor.premium.links.GBP` | `rt-calc.js` line 189 | `https://www.amazon.co.uk/dp/B0C1MONIT03?tag=riajultech-21` |
+| `RT_AFFILIATE_LINKS.monitor.premium.links.CAD` | `rt-calc.js` line 190 | `https://www.amazon.ca/dp/B0C1MONIT03?tag=riajultech-20` |
 
-### Fastest way to fix them
+### The three steps that pick a link (automatic — do not code this)
 
-Bulk-replace the three placeholder strings, then refine per product:
+1. Active currency is read from state: `USD`, `GBP` or `CAD`.
+2. The money allocated to the category picks the tier:
+   `under 250` -> `budget`, `250–700` -> `mid`, `above 700` -> `premium`.
+3. The URL is read from `RT_AFFILIATE_LINKS[category][tier].links[currency]`.
 
-| Find | Replace with |
+Switching the currency toggle re-renders the cards with the new regional links
+immediately — no page reload.
+
+### Rules when pasting your links
+
+| Rule | Why |
 | --- | --- |
-| `https://amzn.to/us-link` | your amazon.com tracking link (9 occurrences) |
-| `https://amzn.to/uk-link` | your amazon.co.uk tracking link (9 occurrences) |
-| `https://amzn.to/ca-link` | your amazon.ca tracking link (9 occurrences) |
+| Full `https://www.amazon.…` URLs | Bare `amzn.to/xyz` short links are rejected by the test suite |
+| `USD` -> `www.amazon.com` | A test checks each region matches its storefront |
+| `GBP` -> `www.amazon.co.uk` | Same |
+| `CAD` -> `www.amazon.ca` | Same |
+| Keep `?tag=` on every link | Without your tag the click earns nothing |
+| `price` stays a **number** (`1599`, not `"$1,599"`) | It is formatted into the active currency |
 
-A single global replace is only correct if one link serves a whole region. To
-send each *product* to its own page, edit all 27 slots individually — the table
-above gives the exact key path and line number for each.
+Your tag must be **your own** Associates tag — using another publisher's tag is
+an Amazon policy violation and will get the account closed.
 
-### Also update the product details
-
-The `name`, `price` and `rating` values next to each link are also mock:
+### Also update the product data
 
 | Category | Budget tier | Mid tier | Premium tier |
 | --- | --- | --- | --- |
@@ -90,8 +93,11 @@ The `name`, `price` and `rating` values next to each link are also mock:
 | desk | FlexiSpot E1 — $220 — 4.4 | Uplift V2 — $600 — 4.7 | Fully Jarvis Bamboo — $950 — 4.6 |
 | monitor | Dell P2422H 24" — $180 — 4.5 | LG 27UP850 — $500 — 4.6 | Apple Studio Display — $1,599 — 4.4 |
 
-`price` is a **number** (no symbol) — the calculator formats it into the active
-currency. Keep it in the same unit, or the tier labels stop being meaningful.
+The ASINs (`B0C1CHAIR1` etc.) are invented and point at nothing. Replace each URL
+with the real product page for that tier.
+
+Icons and category labels are **not** in this object — they live in
+`CATEGORY_META` just below it, so the database stays pure link data.
 
 ---
 
@@ -103,40 +109,44 @@ currency. Keep it in the same unit, or the tier labels stop being meaningful.
 <link rel="canonical" href="https://example.com/smart-ergonomic-calculator/" />
 ```
 
-Change it to the real page URL. In WordPress you normally do **not** hand-write
-a canonical — Yoast / Rank Math set one automatically, and a second one is
-harmful. Only keep this tag if the calculator lives on a standalone page
-outside WordPress.
+Change it to the real page URL. In WordPress you normally do **not** hand-write a
+canonical — Yoast / Rank Math set one automatically, and a second one is harmful.
+Only keep this tag if the calculator lives on a standalone page outside WordPress.
 
 ---
 
-## 3. Other things that are placeholders
+## 3. Other placeholders
 
 | Item | Location | What to do |
 | --- | --- | --- |
-| `Riajul Tech` (affiliate disclosure) | `index.html` methodology section + `rt-calc.js` card copy | Make sure it matches your actual Amazon Associates account name |
-| Affiliate disclosure wording | `#rt-affiliate-disclosure` | Amazon requires a visible disclosure; keep it, adjust to your brand |
-| `operatingSystem` / `applicationCategory` in JSON-LD | `index.html` `<head>` | Fine as-is; update if the positioning changes |
+| `riajultech-20` / `riajultech-21` tags | `RT_AFFILIATE_LINKS` | Replace with your real Associate tags |
+| `Riajul Tech` name | methodology section + affiliate disclosure | Must match your Associates account name |
+| Affiliate disclosure wording | `#rt-affiliate-disclosure` | Amazon requires a visible disclosure; adjust to your brand |
+| ASINs `B0C1…` | `RT_AFFILIATE_LINKS` | Invented; replace with the real product URLs |
 | Demo stylesheet | `assets/css/demo-page.css` | **Never enqueue or paste this** — preview harness only |
-| Google Fonts `<link>` | `index.html` `<head>` | Optional. The design degrades to the system stack without it. Self-host if GDPR matters to you |
+| Google Fonts `<link>` | `index.html` `<head>` | Optional; self-host if GDPR matters |
 
 ---
 
 ## 4. Verify after replacing
 
 ```bash
-# Every placeholder gone? (expect 0)
-grep -c "amzn.to/us-link\|amzn.to/uk-link\|amzn.to/ca-link" assets/js/rt-calc.js
+# No mock URLs left (expect 0)
+grep -c "riajultech-2\|B0C1" assets/js/rt-calc.js
 
-# Regression suite still green
+# All links are full Amazon URLs (expect 27)
+grep -c "https://www.amazon." assets/js/rt-calc.js
+
+# Full suite — includes link-shape and region checks
 npm i --no-save jsdom csstree-validator
 node tests/step1.test.js && node tests/step2.test.js && node tests/step2-ui.test.js \
-  && node tests/step3.test.js && node tests/seo.test.js && node tests/build.test.js
+  && node tests/step3.test.js && node tests/seo.test.js && node tests/affiliate.test.js \
+  && node tests/build.test.js
 
 # Rebuild the single-file version after editing the JS
 python3 tools/build-single-file.py
 ```
 
-If you use the single-file build, remember it embeds a **copy** of the JS —
-editing `rt-calc.js` will not change `wordpress/single-file.html` until you
-re-run the build script. `tests/build.test.js` fails when the two drift apart.
+The single-file build embeds a **copy** of the JS — editing `rt-calc.js` will not
+change `wordpress/single-file.html` until you re-run the build script.
+`tests/build.test.js` fails when the two drift apart.
