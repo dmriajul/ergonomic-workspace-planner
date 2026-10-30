@@ -24,27 +24,27 @@
   --rt-border-strong: rgba(148, 163, 184, 0.28);
 
   /* ---- Form fields (Phase 12) --------------------------------------------
-     WordPress themes style `input` and `select` globally and usually win over
-     a plugin's class-only rules. These semantic tokens give the override layer
-     in rt-calc.css one place to read its colours from, so a theme cannot make
-     a field white by changing the surface palette. */
-  /* The step card sits on --rt-surface (#1e293b), so the fields keep the darker
-     well from the approved design (--rt-bg, #0f172a): 1.22:1 against the card
-     plus a 3.45:1 border reads as an inset control. Swap this single line to
-     var(--rt-surface) if you would rather have fields flush with the card. */
+     WordPress themes style `input` and `select` globally and usually win over a
+     plugin's class-only rules, which is how the live site got dark-on-dark
+     dropdowns and a white budget field. These semantic tokens give the override
+     layer in rt-calc.css a single place to read its colours from.
+
+     The step card sits on --rt-surface (#1e293b), so the fields keep the darker
+     well from the approved design: 1.22:1 against the card, plus the 3.45:1
+     border below, reads as an inset control. Change the one --rt-field-bg line
+     to var(--rt-surface) if you would rather have fields flush with the card. */
   --rt-field-bg: var(--rt-bg);               /* #0f172a */
   --rt-field-bg-hover: var(--rt-surface-raised);
-  --rt-field-text: #ffffff;
-  /* 0.62 alpha composites to roughly 3:1 against --rt-field-bg, which is the
-     WCAG 1.4.11 minimum for a control boundary. A theme border at 0.28 reads as
-     "no border at all" on a dark card. */
+  --rt-field-text: #ffffff;                  /* 17.85:1 on the field surface */
+  /* 0.62 alpha composites to about 3.45:1 against --rt-field-bg, the WCAG 1.4.11
+     minimum for a control boundary. 0.28 reads as "no border at all" here. */
   --rt-field-border: rgba(148, 163, 184, 0.62);
   --rt-field-border-hover: rgba(148, 163, 184, 0.85);
-  --rt-field-placeholder: #94a3b8;           /* readable light grey */
+  --rt-field-placeholder: #94a3b8;           /* 6.96:1, AA for body text */
   --rt-field-option-bg: var(--rt-surface);   /* native dropdown list */
   --rt-field-option-checked: var(--rt-accent-strong);
-  /* Bright indigo at 0.85 alpha composites to about 4:1 against --rt-field-bg,
-     so the focus glow is visible on a dark card rather than a faint smudge. */
+  /* Bright indigo at 0.85 alpha composites to about 4.65:1, so the focus glow
+     is clearly visible on a dark field rather than a faint smudge. */
   --rt-focus-ring: rgba(129, 140, 248, 0.85);
   --rt-focus-ring-width: 3px;
 
